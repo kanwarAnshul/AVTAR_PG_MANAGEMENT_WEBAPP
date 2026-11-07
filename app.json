@@ -1,25 +1,84 @@
 {
   "expo": {
-    "name": "avtar-pg-manager",
+    "name": "AVTAR SINGH PG",
     "slug": "avtar-pg-manager",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F172A"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.avtarsingh.pgmanager",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Required to upload tenant photos and complaint images",
+        "NSPhotoLibraryUsageDescription": "Required to upload documents and photos",
+        "NSMicrophoneUsageDescription": "Not used"
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F172A"
       },
-      "predictiveBackGestureEnabled": false
+      "package": "com.avtarsingh.pgmanager",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0F172A",
+          "sounds": [],
+          "mode": "production"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow AVTAR PG to access your photos for document uploads.",
+          "cameraPermission": "Allow AVTAR PG to use your camera for document photos."
+        }
+      ],
+      "expo-secure-store",
+      "expo-font"
+    ],
+    "scheme": "avtarpg",
+    "extra": {
+      "eas": {
+        "projectId": "6977cd50-5983-4973-9541-3201a713128f"
+      },
+      "supabaseUrl": "YOUR_SUPABASE_URL",
+      "supabaseAnonKey": "YOUR_SUPABASE_ANON_KEY",
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      }
+    },
+    "owner": "arpit_kanwar_27"
   }
 }

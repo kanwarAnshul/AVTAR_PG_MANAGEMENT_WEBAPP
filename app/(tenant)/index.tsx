@@ -147,6 +147,8 @@ export default function TenantHomeScreen() {
           {[
             { icon: '💰', label: 'Pay Rent', onPress: () => router.push('/(tenant)/rent') },
             { icon: '🛠️', label: 'Complaint', onPress: () => router.push('/(tenant)/complaints') },
+            { icon: '📋', label: 'Requests', onPress: () => router.push('/(tenant)/requests' as any) },
+            { icon: '👥', label: 'Presence', onPress: () => router.push('/(tenant)/presence' as any) },
             { icon: '📢', label: 'Notices', onPress: () => router.push('/(tenant)/notices') },
             { icon: '👤', label: 'Profile', onPress: () => router.push('/(tenant)/profile') },
           ].map((action) => (
@@ -268,7 +270,7 @@ const styles = StyleSheet.create({
   pendingSubtitle: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.sm, textAlign: 'center' },
   quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
   quickBtn: {
-    width: (width - Spacing.base * 2 - Spacing.sm) / 2,
+    width: (width - Spacing.base * 2 - Spacing.sm * 2) / 3,
     padding: Spacing.base,
     borderRadius: BorderRadius.xl,
     borderWidth: 1,

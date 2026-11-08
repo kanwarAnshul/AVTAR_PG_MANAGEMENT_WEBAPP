@@ -28,10 +28,10 @@ export default function OwnerHomeScreen() {
   const { profile, user } = useAuthStore();
   const { unreadCount } = useNotificationStore();
 
-  const { data: stats, isLoading, refetch, isRefetching } = useQuery({
+  const { data: stats, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['owner-overall-stats', user?.id],
     queryFn: async () => {
-      // 1. Total payments (collections)
+      // Live queries only — zeros until real records exist (no dummy totals).
       const { data: payments } = await supabase.from('payments').select('amount');
       const totalCollections = (payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
 
@@ -74,16 +74,36 @@ export default function OwnerHomeScreen() {
 
   if (isLoading) return <LoadingView message="Loading master dashboard..." />;
 
+  if (isError) {
+    return (
+      <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
+        <View style={styles.errorWrap}>
+          <Text style={{ fontSize: 40 }}>⚠️</Text>
+          <Text style={[styles.errorTitle, { color: theme.text }]}>Could not load live data</Text>
+          <Text style={[styles.errorSub, { color: theme.textSecondary }]}>
+            {(error as any)?.message ?? 'Check your connection and Supabase migration (003_updates.sql), then retry.'}
+          </Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Live data only — zeros until real records exist (no dummy totals).
   const {
-    totalCollections = 12000000,
-    totalExpenses = 2000000,
-    netCashFlow = 10000000,
-    totalBeds = 24,
-    occupiedBeds = 18,
-    pendingApprovals = 3,
-    totalTenants = 18,
-    totalDeposits = 18000000,
+    totalCollections = 0,
+    totalExpenses = 0,
+    netCashFlow = 0,
+    totalBeds = 0,
+    occupiedBeds = 0,
+    pendingApprovals = 0,
+    totalTenants = 0,
+    totalDeposits = 0,
   } = stats || {};
+
+  const hasLiveData = totalCollections > 0 || totalTenants > 0 || totalBeds > 0 || pendingApprovals > 0;
 
   const occRate = occupancyPercent(occupiedBeds, totalBeds);
 
@@ -109,27 +129,37 @@ export default function OwnerHomeScreen() {
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
       >
-        {/* Master Financial Card */}
-        <Card variant="elevated" style={[styles.financeCard, { backgroundColor: isDark ? '#1E293B' : '#0F172A' }]}>
-          <Text style={styles.finLabel}>MONTHLY CASH FLOW OVERVIEW</Text>
-          <Text style={styles.finBigNumber}>{formatCurrency(netCashFlow)}</Text>
-          <Text style={styles.finSub}>Net surplus after operational expenses</Text>
+        {!hasLiveData && (
+          <View style={[styles.emptyHint, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}>
+            <Text style={{ fontSize: 28 }}>📭</Text>
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>No live data yet</Text>
+            <Text style={[styles.emptySub, { color: theme.textSecondary }]}>
+              Add rooms, tenants and payments — this dashboard will update automatically from your database.
+            </Text>
+          </View>
+        )}
 
-          <View style={styles.finGrid}>
+        {/* Master Financial Card — adaptive to light/dark */}
+        <Card variant="elevated" style={[styles.financeCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <Text style={[styles.finLabel, { color: isDark ? '#FFFFFF90' : theme.textSecondary }]}>MONTHLY CASH FLOW OVERVIEW</Text>
+          <Text style={[styles.finBigNumber, { color: theme.text }]}>{formatCurrency(netCashFlow)}</Text>
+          <Text style={[styles.finSub, { color: theme.textSecondary }]}>Net surplus after operational expenses</Text>
+
+          <View style={[styles.finGrid, { borderTopColor: isDark ? '#FFFFFF20' : theme.border }]}>
             <View style={styles.finItem}>
-              <Text style={styles.finSubLabel}>Total Inflow</Text>
+              <Text style={[styles.finSubLabel, { color: theme.textSecondary }]}>Total Inflow</Text>
               <Text style={[styles.finVal, { color: Colors.success }]}>
                 +{formatCurrency(totalCollections, true)}
               </Text>
             </View>
             <View style={styles.finItem}>
-              <Text style={styles.finSubLabel}>Expenses</Text>
+              <Text style={[styles.finSubLabel, { color: theme.textSecondary }]}>Expenses</Text>
               <Text style={[styles.finVal, { color: Colors.error }]}>
                 -{formatCurrency(totalExpenses, true)}
               </Text>
             </View>
             <View style={styles.finItem}>
-              <Text style={styles.finSubLabel}>Deposits Held</Text>
+              <Text style={[styles.finSubLabel, { color: theme.textSecondary }]}>Deposits Held</Text>
               <Text style={[styles.finVal, { color: Colors.accent }]}>
                 {formatCurrency(totalDeposits, true)}
               </Text>
@@ -273,6 +303,14 @@ const styles = StyleSheet.create({
   chartLegend: { flexDirection: 'row', justifyContent: 'space-between', marginTop: Spacing.sm },
   legendItemText: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs },
   actionCard: { padding: Spacing.base },
+  errorWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl },
+  errorTitle: { fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.lg, marginTop: Spacing.md, textAlign: 'center' },
+  errorSub: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.sm, marginTop: Spacing.sm, textAlign: 'center', lineHeight: 20 },
+  retryBtn: { marginTop: Spacing.base, backgroundColor: '#6366F1', paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xl, borderRadius: 10 },
+  retryText: { color: '#FFF', fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.sm },
+  emptyHint: { padding: Spacing.base, borderRadius: 12, borderWidth: 1, alignItems: 'center', marginBottom: Spacing.base },
+  emptyTitle: { fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.base, marginTop: Spacing.sm },
+  emptySub: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.sm, marginTop: 4, textAlign: 'center', lineHeight: 20 },
   actionHeading: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.xs, letterSpacing: 1, marginBottom: Spacing.sm },
   shortcutRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md, borderBottomWidth: 1 },
   shortcutTitle: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.sm },

@@ -83,7 +83,8 @@ export default function WardenBedsScreen() {
       const rentPaise = room.monthly_rent || 800000;
       const depositPaise = room.deposit_amt || 1000000;
 
-      // 1. Create active tenancy record
+      // 1. Create active tenancy record (due date = allocation date)
+      const today = new Date();
       const { data: tenancy, error: tError } = await supabase
         .from('tenancies')
         .insert({
@@ -93,14 +94,25 @@ export default function WardenBedsScreen() {
           bed_id: selectedBed.id,
           monthly_rent: rentPaise,
           deposit_paid: depositPaise,
-          check_in_date: new Date().toISOString().split('T')[0],
+          check_in_date: today.toISOString().split('T')[0],
+          due_day: today.getDate(),
           status: 'active',
           created_by: user?.id,
-        })
+        } as any)
         .select()
         .single();
 
       if (tError) throw tError;
+
+      try {
+        await supabase.from('audit_events').insert({
+          actor_id: user?.id,
+          action: 'ASSIGN_BED',
+          table_name: 'tenancies',
+          record_id: (tenancy as any)?.id,
+          new_data: { tenant_id: selectedTenantId, bed_id: selectedBed.id, due_day: today.getDate() },
+        });
+      } catch { /* non-fatal audit */ }
 
       // 2. Call atomic bed allocation
       const { error: aError } = await supabase.rpc('assign_bed_atomic', {

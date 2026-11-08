@@ -17,7 +17,7 @@ import { supabase } from '../../src/lib/supabase';
 import { Colors, Typography, Spacing, BorderRadius, PAYMENT_MODES } from '../../src/constants/theme';
 import { useThemeStore } from '../../src/stores/themeStore';
 import { useAuthStore } from '../../src/stores/authStore';
-import { formatCurrency, formatDate, getBillingPeriodLabel, generateReceiptNo } from '../../src/utils/helpers';
+import { formatCurrency, formatDate, getBillingPeriodLabel, generateReceiptNo, canChangeDueDay, dueDayOptions, buildDueDate, friendlyDbError } from '../../src/utils/helpers';
 import { Card } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
 import { Button } from '../../src/components/ui/Button';
@@ -35,6 +35,8 @@ export default function TenantRentScreen() {
   const [paymentMode, setPaymentMode] = useState<string>('upi');
   const [referenceNo, setReferenceNo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dueDay, setDueDay] = useState<number | null>(null);
+  const [dueDaySaving, setDueDaySaving] = useState(false);
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['tenant-rent-data', user?.id],
@@ -42,29 +44,69 @@ export default function TenantRentScreen() {
       if (!user) return null;
       const { data: tenant } = await supabase
         .from('tenants')
-        .select('id, property_id, full_name, current_tenancy:tenancies!inner(id, room:rooms(room_no), bed:beds(label))')
+        .select('id, property_id, full_name, current_tenancy:tenancies!inner(id, due_day, check_in_date, room:rooms(room_no), bed:beds(label))')
         .eq('user_id', user.id)
         .eq('tenancies.status', 'active')
         .maybeSingle();
 
       if (!tenant) return null;
 
+      const tenancy = (tenant as any).current_tenancy?.[0];
+      // Default due day = allocation (check-in) day per business rule.
+      const defaultDueDay = tenancy?.due_day ??
+        (tenancy?.check_in_date ? new Date(tenancy.check_in_date).getDate() : new Date().getDate());
+      setDueDay(defaultDueDay);
+
       const { data: invoices } = await supabase
         .from('invoices')
         .select('*, invoice_lines(*)')
-        .eq('tenant_id', tenant.id)
+        .eq('tenant_id', (tenant as any).id)
         .order('billing_period', { ascending: false });
 
       const { data: payments } = await supabase
         .from('payments')
         .select('*')
-        .eq('tenant_id', tenant.id)
+        .eq('tenant_id', (tenant as any).id)
         .order('payment_date', { ascending: false });
 
       return { tenant, invoices: invoices || [], payments: payments || [] };
     },
     enabled: !!user,
   });
+
+  // Due date = allocation date. Tenants may change it only before the 15th.
+  const saveDueDay = async (day: number) => {
+    const tenancy = (data as any)?.tenant?.current_tenancy?.[0];
+    if (!tenancy) return;
+    if (!canChangeDueDay()) {
+      Alert.alert('Locked', 'Due date can only be changed before the 15th of the month. It will unlock next month.');
+      return;
+    }
+    setDueDaySaving(true);
+    try {
+      const { error } = await supabase
+        .from('tenancies')
+        .update({ due_day: day } as any)
+        .eq('id', tenancy.id);
+      if (error) throw new Error(friendlyDbError(error));
+
+      // Push the new day onto all unpaid invoices.
+      const unpaid = ((data as any)?.invoices || []).filter((inv: any) => inv.balance_due > 0);
+      for (const inv of unpaid) {
+        await supabase
+          .from('invoices')
+          .update({ due_date: buildDueDate(inv.billing_period, day) } as any)
+          .eq('id', inv.id);
+      }
+      setDueDay(day);
+      queryClient.invalidateQueries({ queryKey: ['tenant-rent-data'] });
+      Alert.alert('Due Date Updated', `Your rent will now be due on the ${day}th every month.`);
+    } catch (err: any) {
+      Alert.alert('Update Failed', err?.message ?? 'Could not update due date');
+    } finally {
+      setDueDaySaving(false);
+    }
+  };
 
   const recordPaymentMutation = useMutation({
     mutationFn: async () => {
@@ -207,6 +249,44 @@ export default function TenantRentScreen() {
           <Text style={[styles.summarySub, { color: theme.textSecondary }]}>
             {totalDue > 0 ? 'Please clear overdue invoices on time to avoid late fees.' : 'You have no pending rent invoices.'}
           </Text>
+        </Card>
+
+        {/* Due Date Rule */}
+        <Card style={styles.dueDayCard}>
+          <Text style={[styles.sectionHeading, { color: theme.text }]}>📅 YOUR RENT DUE DATE</Text>
+          <Text style={[styles.dueDayText, { color: theme.textSecondary }]}>
+            Due on the <Text style={{ color: theme.text, fontFamily: Typography.fontFamily.bold }}>{dueDay ?? '—'}th</Text> every month
+            {' '}(set to your room allocation date).
+          </Text>
+          {canChangeDueDay() ? (
+            <>
+              <Text style={[styles.dueDayHint, { color: theme.textSecondary }]}>
+                You are before the 15th — tap a day to change it. Future bills will use the new date.
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dueDayRow}>
+                {dueDayOptions().map((day) => (
+                  <TouchableOpacity
+                    key={day}
+                    onPress={() => saveDueDay(day)}
+                    disabled={dueDaySaving || dueDay === day}
+                    style={[
+                      styles.dueDayChip,
+                      { borderColor: theme.border, backgroundColor: dueDay === day ? Colors.primary : theme.surfaceAlt },
+                      { opacity: dueDaySaving ? 0.6 : 1 },
+                    ]}
+                  >
+                    <Text style={{ color: dueDay === day ? '#FFF' : theme.text, fontFamily: Typography.fontFamily.semiBold, fontSize: 12 }}>
+                      {day}th
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </>
+          ) : (
+            <Text style={[styles.dueDayLocked, { color: Colors.error }]}>
+              🔒 Locked after the 15th — you can change the due date again from the 1st of next month.
+            </Text>
+          )}
         </Card>
 
         {/* Invoices List */}
@@ -364,6 +444,12 @@ const styles = StyleSheet.create({
   summaryAmount: { fontFamily: Typography.fontFamily.extraBold, fontSize: Typography.size['3xl'], marginVertical: Spacing.xs },
   summarySub: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs, textAlign: 'center' },
   sectionHeading: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.xs, letterSpacing: 1, marginBottom: Spacing.sm },
+  dueDayCard: { padding: Spacing.base, marginBottom: Spacing.base },
+  dueDayText: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.sm, marginBottom: Spacing.sm },
+  dueDayHint: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs, marginBottom: Spacing.sm, lineHeight: 18 },
+  dueDayRow: { marginTop: 4 },
+  dueDayChip: { paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, marginRight: 8, minWidth: 52, alignItems: 'center' },
+  dueDayLocked: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.sm, lineHeight: 20 },
   invoiceCard: { marginBottom: Spacing.md, padding: Spacing.base },
   invoiceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.sm },
   invoicePeriod: { fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.base },

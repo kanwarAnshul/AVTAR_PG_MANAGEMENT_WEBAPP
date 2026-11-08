@@ -278,7 +278,7 @@ export default function EmployeeRegisterScreen() {
 
               <Button title="Submit for Approval" onPress={() => handleSubmit(onSubmit)()} isLoading={isLoading} />
               <Text style={[styles.submitNote, { color: theme.textMuted }]}>
-                Review takes up to 24 hours. You'll be notified when approved.
+                Review takes up to 24 hours. You will be notified once approved.
               </Text>
             </Card>
           )}

@@ -15,19 +15,24 @@ import { Colors, Typography, Spacing, BorderRadius } from '../../src/constants/t
 import { useThemeStore } from '../../src/stores/themeStore';
 import { useAuthStore } from '../../src/stores/authStore';
 import { formatDate, formatCurrency } from '../../src/utils/helpers';
+import { fetchPrivacyPolicy } from '../../src/services/messaging';
 import { Card } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
 import { Button } from '../../src/components/ui/Button';
 import { ScreenHeader, ConfirmDialog, LoadingView } from '../../src/components/ui';
+import { ProfileEditor } from '../../src/components/ProfileEditor';
+import { ThemePicker } from '../../src/components/ThemePicker';
 
 export default function TenantProfileScreen() {
-  const { isDark, toggleTheme } = useThemeStore();
+  const { isDark } = useThemeStore();
   const theme = isDark ? Colors.dark : Colors.light;
   const { user, profile, signOut } = useAuthStore();
 
   const [checkoutModalVisible, setCheckoutModalVisible] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [isRequestingCheckout, setIsRequestingCheckout] = useState(false);
+  const [privacyVisible, setPrivacyVisible] = useState(false);
+  const [privacyText, setPrivacyText] = useState('');
 
   const { data: tenantInfo, isLoading } = useQuery({
     queryKey: ['tenant-profile-details', user?.id],
@@ -116,6 +121,10 @@ export default function TenantProfileScreen() {
           </View>
         </Card>
 
+        {/* One-time locked profile: only photo + password editable */}
+        <Text style={[styles.sectionTitle, { color: theme.text, marginBottom: Spacing.sm }]}>🔒 ONE-TIME PROFILE (PHOTO & PASSWORD ONLY)</Text>
+        <ProfileEditor tenantMode />
+
         {/* Stay & Bed Info */}
         {tenancy && (
           <Card style={styles.sectionCard}>
@@ -192,17 +201,24 @@ export default function TenantProfileScreen() {
         {/* Preferences & Actions */}
         <Card style={styles.sectionCard}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>⚙️ PREFERENCES & ACTIONS</Text>
+          <Text style={[styles.label, { color: theme.textSecondary, marginBottom: Spacing.xs }]}>Your theme (applies to the whole app for you)</Text>
+          <ThemePicker />
+
           <TouchableOpacity
-            style={[styles.prefRow, { borderBottomColor: theme.border }]}
-            onPress={toggleTheme}
+            style={[styles.prefRow, { borderBottomColor: theme.border, marginTop: Spacing.sm }]}
+            onPress={async () => {
+              const value = await fetchPrivacyPolicy();
+              setPrivacyText(value);
+              setPrivacyVisible(true);
+            }}
           >
             <View>
-              <Text style={[styles.prefTitle, { color: theme.text }]}>Appearance</Text>
+              <Text style={[styles.prefTitle, { color: theme.text }]}>📜 Privacy Policy</Text>
               <Text style={[styles.prefSub, { color: theme.textSecondary }]}>
-                Currently: {isDark ? 'Dark Mode' : 'Light Mode'}
+                How your data is handled
               </Text>
             </View>
-            <Text style={{ fontSize: 20 }}>{isDark ? '🌙' : '☀️'}</Text>
+            <Text style={{ fontSize: 18, color: Colors.primary }}>›</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -232,6 +248,17 @@ export default function TenantProfileScreen() {
           </TouchableOpacity>
         </Card>
       </ScrollView>
+
+      {/* Privacy Policy Dialog */}
+      <ConfirmDialog
+        visible={privacyVisible}
+        title="Privacy Policy"
+        message={privacyText || 'Loading policy...'}
+        confirmLabel="Close"
+        cancelLabel="Dismiss"
+        onConfirm={() => setPrivacyVisible(false)}
+        onCancel={() => setPrivacyVisible(false)}
+      />
 
       {/* Checkout Dialog */}
       <ConfirmDialog

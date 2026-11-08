@@ -12,7 +12,12 @@ export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'partial' | 'overdue';
 export type PaymentMode = 'cash' | 'upi' | 'bank_transfer' | 'cheque';
 export type ComplaintStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 export type ComplaintPriority = 'low' | 'medium' | 'high' | 'urgent';
-export type NotificationType = 'approval' | 'rejection' | 'rent_due' | 'rent_paid' | 'complaint_update' | 'notice' | 'checkout';
+export type NotificationType = 'approval' | 'rejection' | 'rent_due' | 'rent_paid' | 'complaint_update' | 'notice' | 'checkout' | 'fine' | 'emergency' | 'invite' | 'presence' | 'request_update';
+export type NoticeType = 'general' | 'rent_reminder' | 'maintenance' | 'rules' | 'emergency' | 'fine';
+export type ThemePreference = 'system' | 'light' | 'dark';
+export type PresenceStatus = 'present' | 'absent';
+export type RequestStatus = 'pending' | 'approved' | 'rejected';
+export type RoomCategory = 'studio' | '1bhk' | '2bhk' | '3bhk' | 'other';
 
 export interface Profile {
   id: string;
@@ -51,6 +56,13 @@ export interface Room {
   amenities?: string[];
   is_active: boolean;
   created_at: string;
+  // Extended listing fields (migration 003)
+  category?: RoomCategory;
+  location?: string;
+  photo_urls?: string[];
+  video_urls?: string[];
+  // Joined
+  property?: Property;
 }
 
 export interface Bed {
@@ -132,6 +144,7 @@ export interface Tenancy {
   check_out_date?: string;
   expected_checkout?: string;
   status: TenancyStatus;
+  due_day?: number; // 1-31: monthly due date (defaults to allocation day)
   created_at: string;
   // Joined
   room?: Room;
@@ -217,11 +230,13 @@ export interface Notice {
   id: string;
   property_id: string;
   author_id: string;
-  type: string;
+  type: NoticeType | string;
   title: string;
   body: string;
   is_pinned: boolean;
   expires_at?: string;
+  fine_amount?: number; // paise (for type=fine)
+  damaged_item?: string;
   created_at: string;
   author?: Profile;
 }
@@ -229,7 +244,7 @@ export interface Notice {
 export interface Notification {
   id: string;
   user_id: string;
-  type: NotificationType;
+  type: NotificationType | string;
   title: string;
   body: string;
   data?: Record<string, unknown>;
@@ -247,6 +262,58 @@ export interface Expense {
   receipt_url?: string;
   created_by?: string;
   created_at: string;
+}
+
+// Tenant amenity / requirement requests (migration 003)
+export interface TenantRequest {
+  id: string;
+  tenant_id: string;
+  property_id: string;
+  room_id?: string;
+  title: string;
+  description?: string;
+  category: string;
+  status: RequestStatus;
+  decision_reason?: string;
+  reviewer_id?: string;
+  created_at: string;
+  updated_at: string;
+  tenant?: Tenant;
+}
+
+// Daily presence marking (migration 003)
+export interface DailyPresence {
+  id: string;
+  tenant_id: string;
+  property_id: string;
+  room_id: string;
+  presence_date: string; // YYYY-MM-DD
+  status: PresenceStatus;
+  marked_at: string;
+  tenant?: Tenant;
+}
+
+// Emergency room alerts (migration 003)
+export interface EmergencyAlert {
+  id: string;
+  tenant_id: string;
+  property_id: string;
+  room_id: string;
+  reason: string;
+  description?: string;
+  is_active: boolean;
+  resolved_at?: string;
+  created_at: string;
+  tenant?: Tenant;
+}
+
+// Privacy policy / app settings (migration 003)
+export interface AppSetting {
+  id: string;
+  key: string;
+  value: string;
+  updated_at: string;
+  updated_by?: string;
 }
 
 // Dashboard stats
@@ -300,4 +367,3 @@ export interface EmployeeRegistrationForm {
   family_relation: string;
   pan_number: string;
 }
-

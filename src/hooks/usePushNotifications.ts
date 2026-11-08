@@ -9,6 +9,8 @@ import { supabase } from '../lib/supabase';
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -20,7 +22,7 @@ export async function registerForPushNotificationsAsync(userId: string): Promise
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('avtar_pg_notifications', {
       name: 'AVTAR PG Notifications',
-      importance: Notifications.AndroidImportance.MAX,
+      importance: 7, // AndroidImportance.MAX
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#6366F1',
     });
@@ -80,12 +82,8 @@ export function usePushNotifications(userId?: string) {
     });
 
     return () => {
-      if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
-      }
-      if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
-      }
+      notificationListener.current?.remove();
+      responseListener.current?.remove();
     };
   }, [userId]);
 }

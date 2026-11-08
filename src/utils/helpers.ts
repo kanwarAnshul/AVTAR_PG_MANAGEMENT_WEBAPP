@@ -49,6 +49,42 @@ export const getBillingPeriodLabel = (period: string): string => {
   }
 };
 
+// ── Due-date rules ──────────────────────────────────────────
+// Rent due date = room allocation date. Tenants may only change the
+// monthly due day *before* the 15th of the current month.
+export const DUE_DATE_CHANGE_CUTOFF_DAY = 15;
+export const DUE_REMINDER_LEAD_DAYS = 5;
+
+export const canChangeDueDay = (now: Date = new Date()): boolean =>
+  now.getDate() < DUE_DATE_CHANGE_CUTOFF_DAY;
+
+/** Day-of-month a tenant is allowed to pick for their due date (1–28 to stay safe across all months). */
+export const dueDayOptions = (): number[] =>
+  Array.from({ length: 28 }, (_, i) => i + 1);
+
+/** Build a due-date YYYY-MM-DD for a billing period given a due day. */
+export const buildDueDate = (billingPeriod: string, dueDay: number): string => {
+  const [year, month] = billingPeriod.split('-').map(Number);
+  const safeDay = Math.min(Math.max(1, dueDay), 28);
+  const m = String(month).padStart(2, '0');
+  const d = String(safeDay).padStart(2, '0');
+  return `${year}-${m}-${d}`;
+};
+
+/** Days until a due date (negative = overdue). */
+export const daysUntil = (dueDateStr: string, now: Date = new Date()): number => {
+  const due = new Date(dueDateStr + 'T23:59:59');
+  const msPerDay = 1000 * 60 * 60 * 24;
+  return Math.ceil((due.getTime() - now.getTime()) / msPerDay);
+};
+
+export const todayLocalISO = (now: Date = new Date()): string => {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
 // PAN Validation
 export const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 export const validatePAN = (pan: string): boolean => PAN_REGEX.test(pan.toUpperCase());
@@ -77,6 +113,40 @@ export const occupancyPercent = (occupied: number, total: number): number => {
   return Math.round((occupied / total) * 100);
 };
 
+// Friendly database / auth error messages (data-saving failures)
+export const friendlyDbError = (err: unknown): string => {
+  const message =
+    err && typeof err === 'object' && 'message' in err
+      ? String((err as { message: unknown }).message)
+      : String(err ?? 'Unknown error');
+  const lower = message.toLowerCase();
+  if (lower.includes('network') || lower.includes('fetch') || lower.includes('failed to fetch')) {
+    return 'You appear to be offline. Please check your internet connection and try again.';
+  }
+  if (lower.includes('row-level security') || lower.includes('rls') || lower.includes('permission denied') || lower.includes('new row violates') || lower.includes('violates row')) {
+    return 'Save blocked by security policy. Your role may not have permission for this action — try signing out and back in, or contact the owner.';
+  }
+  if (lower.includes('duplicate') || lower.includes('unique') || lower.includes('already exists') || lower.includes('23505')) {
+    return 'This record already exists. It may have been saved just now — refreshing the list.';
+  }
+  if (lower.includes('foreign key') || lower.includes('23503')) {
+    return 'Referenced record is missing. Please refresh and try again.';
+  }
+  if (lower.includes('not-null') || lower.includes('23502') || lower.includes('null value')) {
+    return 'Some required information is missing. Please fill all required fields and try again.';
+  }
+  if (lower.includes('does not exist') || lower.includes('could not find') || lower.includes('42p01') || lower.includes('42703')) {
+    return 'Database table/column is not set up yet. Please apply the latest Supabase migration (003_updates) and try again.';
+  }
+  if (lower.includes('invalid') && lower.includes('jwt')) {
+    return 'Your session has expired. Please sign in again.';
+  }
+  if (lower.includes('unauthorized') || lower.includes('not authenticated')) {
+    return 'You are not signed in. Please sign in and try again.';
+  }
+  return message;
+};
+
 // Status colors
 export const getStatusColor = (status: string): { bg: string; text: string } => {
   const map: Record<string, { bg: string; text: string }> = {
@@ -98,6 +168,9 @@ export const getStatusColor = (status: string): { bg: string; text: string } => 
     sent:        { bg: '#DBEAFE', text: '#1E40AF' },
     active:      { bg: '#DCFCE7', text: '#166534' },
     checked_out: { bg: '#F3F4F6', text: '#374151' },
+    present:     { bg: '#DCFCE7', text: '#166534' },
+    absent:      { bg: '#FEE2E2', text: '#991B1B' },
+    fine:        { bg: '#FEE2E2', text: '#991B1B' },
     low:         { bg: '#DCFCE7', text: '#166534' },
     medium:      { bg: '#FEF3C7', text: '#92400E' },
     high:        { bg: '#FFEDD5', text: '#9A3412' },
@@ -108,4 +181,3 @@ export const getStatusColor = (status: string): { bg: string; text: string } => 
 
 export const capitalize = (s: string): string =>
   s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ');
-

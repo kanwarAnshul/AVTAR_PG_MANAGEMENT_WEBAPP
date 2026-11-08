@@ -71,8 +71,6 @@
       "eas": {
         "projectId": "6977cd50-5983-4973-9541-3201a713128f"
       },
-      "supabaseUrl": "YOUR_SUPABASE_URL",
-      "supabaseAnonKey": "YOUR_SUPABASE_ANON_KEY",
       "router": {
         "asyncRoutes": {
           "web": true

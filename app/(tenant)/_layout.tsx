@@ -18,12 +18,15 @@ export default function TenantLayout() {
       const unsub = subscribeToNotifications(user.id);
       return unsub;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const TAB_ICON: Record<string, { active: string; inactive: string; label: string }> = {
     index:      { active: '🏠', inactive: '🏠', label: 'Home' },
     rent:       { active: '💰', inactive: '💰', label: 'Rent' },
     complaints: { active: '🛠️', inactive: '🛠️', label: 'Complaints' },
+    requests:   { active: '📋', inactive: '📋', label: 'Requests' },
+    presence:   { active: '👥', inactive: '👥', label: 'Presence' },
     notices:    { active: '📢', inactive: '📢', label: 'Notices' },
     profile:    { active: '👤', inactive: '👤', label: 'Profile' },
   };
@@ -55,6 +58,8 @@ export default function TenantLayout() {
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
       <Tabs.Screen name="rent" options={{ title: 'Rent' }} />
       <Tabs.Screen name="complaints" options={{ title: 'Complaints' }} />
+      <Tabs.Screen name="requests" options={{ title: 'Requests' }} />
+      <Tabs.Screen name="presence" options={{ title: 'Presence' }} />
       <Tabs.Screen name="notices" options={{ title: 'Notices' }} />
       <Tabs.Screen
         name="profile"
@@ -66,4 +71,3 @@ export default function TenantLayout() {
     </Tabs>
   );
 }
-

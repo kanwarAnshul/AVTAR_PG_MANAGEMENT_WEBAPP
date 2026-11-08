@@ -18,6 +18,7 @@ export default function WardenLayout() {
       const unsub = subscribeToNotifications(user.id);
       return unsub;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const TAB_ICONS: Record<string, string> = {
@@ -26,6 +27,10 @@ export default function WardenLayout() {
     beds: '🛏️',
     dues: '💰',
     complaints: '🛠️',
+    requests: '📋',
+    presence: '👥',
+    notices: '📢',
+    profile: '👤',
   };
 
   return (
@@ -57,7 +62,16 @@ export default function WardenLayout() {
       <Tabs.Screen name="beds" options={{ title: 'Beds' }} />
       <Tabs.Screen name="dues" options={{ title: 'Dues' }} />
       <Tabs.Screen name="complaints" options={{ title: 'Complaints' }} />
+      <Tabs.Screen name="requests" options={{ title: 'Requests' }} />
+      <Tabs.Screen name="presence" options={{ title: 'Presence' }} />
+      <Tabs.Screen name="notices" options={{ title: 'Notices' }} />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+        }}
+      />
     </Tabs>
   );
 }
-

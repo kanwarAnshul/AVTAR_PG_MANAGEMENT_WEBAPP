@@ -9,15 +9,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Colors, Typography, Spacing, BorderRadius } from '../../src/constants/theme';
+import { Colors, Typography, Spacing } from '../../src/constants/theme';
 import { useThemeStore } from '../../src/stores/themeStore';
 import { useAuthStore } from '../../src/stores/authStore';
 import { Card } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
 import { ScreenHeader, ConfirmDialog } from '../../src/components/ui';
+import { ThemePicker } from '../../src/components/ThemePicker';
 
 export default function OwnerSettingsScreen() {
-  const { isDark, toggleTheme } = useThemeStore();
+  const { isDark } = useThemeStore();
   const theme = isDark ? Colors.dark : Colors.light;
   const { profile, signOut } = useAuthStore();
 
@@ -27,6 +28,14 @@ export default function OwnerSettingsScreen() {
     await signOut();
     router.replace('/(auth)/welcome');
   };
+
+  const navRows: { title: string; sub: string; icon: string; href: any }[] = [
+    { title: 'My Profile', sub: 'Edit email info, phone, password & photo', icon: '👤', href: '/(owner)/profile' },
+    { title: 'Rooms & Inventory', sub: 'Add rooms, photos, BHK & rent charges', icon: '🏠', href: '/(owner)/rooms' },
+    { title: 'Notices & Fines', sub: 'Fine notices for damaged property', icon: '💸', href: '/(owner)/notices' },
+    { title: 'Privacy Policy', sub: 'Edit tenant-visible policy', icon: '📜', href: '/(owner)/privacy' },
+    { title: 'Warden Activity', sub: 'Audit checks on warden work', icon: '👁️', href: '/(owner)/activity' },
+  ];
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
@@ -75,22 +84,28 @@ export default function OwnerSettingsScreen() {
           </View>
         </Card>
 
-        {/* App Preferences */}
+        {/* Management shortcuts */}
         <Card style={styles.card}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>🎨 APP PREFERENCES</Text>
-          <TouchableOpacity
-            style={[styles.prefRow, { borderBottomColor: theme.border }]}
-            onPress={toggleTheme}
-          >
-            <View>
-              <Text style={[styles.prefTitle, { color: theme.text }]}>Theme Mode</Text>
-              <Text style={[styles.prefSub, { color: theme.textSecondary }]}>
-                Currently: {isDark ? 'Dark Theme' : 'Light Theme'}
-              </Text>
-            </View>
-            <Text style={{ fontSize: 22 }}>{isDark ? '🌙' : '☀️'}</Text>
-          </TouchableOpacity>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>🏢 MANAGEMENT</Text>
+          {navRows.map((row, i) => (
+            <TouchableOpacity
+              key={row.title}
+              style={[styles.prefRow, { borderBottomColor: theme.border, borderBottomWidth: i === navRows.length - 1 ? 0 : 1 }]}
+              onPress={() => router.push(row.href as any)}
+            >
+              <View>
+                <Text style={[styles.prefTitle, { color: theme.text }]}>{row.icon} {row.title}</Text>
+                <Text style={[styles.prefSub, { color: theme.textSecondary }]}>{row.sub}</Text>
+              </View>
+              <Text style={{ fontSize: 18, color: Colors.primary }}>›</Text>
+            </TouchableOpacity>
+          ))}
+        </Card>
 
+        {/* App Preferences — global theme control for this user */}
+        <Card style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>🎨 APP PREFERENCES (YOUR THEME)</Text>
+          <ThemePicker />
           <TouchableOpacity
             style={[styles.prefRow, { borderBottomColor: theme.border }]}
             onPress={() => Alert.alert('Rules Updated', 'Property gate rules: Entry closed after 10:30 PM. Visitors allowed in lounge.')}
@@ -148,4 +163,3 @@ const styles = StyleSheet.create({
   prefTitle: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.sm },
   prefSub: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs, marginTop: 2 },
 });
-

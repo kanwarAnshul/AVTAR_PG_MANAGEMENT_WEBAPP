@@ -4,7 +4,7 @@ import { useAuthStore } from '../src/stores/authStore';
 import { LoadingView } from '../src/components/ui';
 
 export default function Index() {
-  const { session, profile, isInitialized } = useAuthStore();
+  const { session, profile, isInitialized, configError } = useAuthStore();
   const [safetyReady, setSafetyReady] = useState(false);
 
   useEffect(() => {
@@ -17,6 +17,9 @@ export default function Index() {
   }
 
   if (!session) return <Redirect href="/(auth)/welcome" />;
+
+  // Real auth only: no session means welcome; role from live profile.
+  if (configError) return <Redirect href="/(auth)/welcome" />;
 
   // Role-based redirect
   switch (profile?.role) {

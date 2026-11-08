@@ -11,7 +11,8 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../../src/constants/theme';
 import { useThemeStore } from '../../src/stores/themeStore';
-import { useAuthStore, DemoPersona } from '../../src/stores/authStore';
+import { useAuthStore } from '../../src/stores/authStore';
+import { isSupabaseConfigured } from '../../src/lib/supabase';
 import { Button } from '../../src/components/ui/Button';
 
 const { width, height } = Dimensions.get('window');
@@ -26,37 +27,49 @@ const FEATURES = [
 ];
 
 export default function WelcomeScreen() {
-  const { isDark, toggleTheme } = useThemeStore();
-  const { loginAsDemo } = useAuthStore();
-
-  const handleDemoSelect = (persona: DemoPersona) => {
-    loginAsDemo(persona);
-    if (persona === 'owner') {
-      router.replace('/(owner)');
-    } else if (persona === 'warden') {
-      router.replace('/(warden)');
-    } else {
-      router.replace('/(tenant)');
-    }
-  };
+  const { isDark, preference, setPreference } = useThemeStore();
+  const theme = isDark ? Colors.dark : Colors.light;
+  const { configError } = useAuthStore();
 
   return (
-    <View style={[styles.root, { backgroundColor: isDark ? '#0F172A' : '#0B1329' }]}>
-      {/* Dynamic Background Orbs */}
+    <View style={[styles.root, { backgroundColor: theme.background }]}>
+      {/* Dynamic Background Orbs (soft in light mode too) */}
       <View style={styles.bgGradient}>
-        <View style={[styles.orb1, { backgroundColor: Colors.primary + '35' }]} />
-        <View style={[styles.orb2, { backgroundColor: Colors.accent + '25' }]} />
+        <View style={[styles.orb1, { backgroundColor: isDark ? Colors.primary + '35' : Colors.primary + '14' }]} />
+        <View style={[styles.orb2, { backgroundColor: isDark ? Colors.accent + '25' : Colors.accent + '10' }]} />
       </View>
 
       <SafeAreaView style={styles.safe}>
         {/* Top Controls */}
         <View style={styles.topBar}>
-          <View style={styles.badgePill}>
-            <Text style={styles.badgePillText}>v1.0 · Android & iOS Ready</Text>
+          <View style={[styles.badgePill, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.badgePillText, { color: theme.textSecondary }]}>
+              v1.0 · Android & iOS Ready
+            </Text>
           </View>
-          <TouchableOpacity onPress={toggleTheme} style={styles.themeBtn} activeOpacity={0.8}>
-            <Text style={{ fontSize: 20 }}>{isDark ? '☀️' : '🌙'}</Text>
-          </TouchableOpacity>
+          <View style={styles.themePicker}>
+            {(['system', 'light', 'dark'] as const).map((pref) => (
+              <TouchableOpacity
+                key={pref}
+                onPress={() => setPreference(pref)}
+                style={[
+                  styles.themeChip,
+                  { borderColor: theme.border, backgroundColor: theme.card },
+                  preference === pref && { backgroundColor: Colors.primary, borderColor: Colors.primary },
+                ]}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[
+                    styles.themeChipText,
+                    { color: preference === pref ? '#FFF' : theme.textSecondary },
+                  ]}
+                >
+                  {pref === 'system' ? '◐ Auto' : pref === 'light' ? '☀️' : '🌙'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         <ScrollView
@@ -68,57 +81,29 @@ export default function WelcomeScreen() {
             <View style={styles.logoCircle}>
               <Text style={styles.logoEmoji}>🏠</Text>
             </View>
-            <Text style={styles.appName}>AVTAR SINGH PG</Text>
-            <Text style={styles.tagline}>Enterprise Multi-Role PG Management</Text>
+            <Text style={[styles.appName, { color: theme.text }]}>AVTAR SINGH PG</Text>
+            <Text style={[styles.tagline, { color: theme.textSecondary }]}>Enterprise Multi-Role PG Management</Text>
           </View>
 
           {/* Feature Badges */}
           <View style={styles.featureGrid}>
             {FEATURES.map((f) => (
-              <View key={f.label} style={styles.featureItem}>
+              <View key={f.label} style={[styles.featureItem, { backgroundColor: theme.card, borderColor: theme.border }]}>
                 <Text style={styles.featureIcon}>{f.icon}</Text>
-                <Text style={styles.featureLabel}>{f.label}</Text>
+                <Text style={[styles.featureLabel, { color: theme.text }]}>{f.label}</Text>
               </View>
             ))}
           </View>
 
-          {/* Live Persona Quick Test Bar */}
-          <View style={styles.demoSection}>
-            <View style={styles.demoHeader}>
-              <Text style={styles.demoTitle}>⚡ 1-Tap Role Preview (Demo Mode)</Text>
-              <Text style={styles.demoSubtitle}>Experience any portal instantly:</Text>
+          {/* Live-data config guard */}
+          {(!isSupabaseConfigured || configError) && (
+            <View style={[styles.configWarn, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
+              <Text style={styles.configWarnTitle}>⚠️ Live data not connected</Text>
+              <Text style={styles.configWarnSub}>
+                {configError ?? 'Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env, then restart the app.'}
+              </Text>
             </View>
-            <View style={styles.demoPills}>
-              <TouchableOpacity
-                onPress={() => handleDemoSelect('student')}
-                style={[styles.demoPill, { backgroundColor: '#1E3A8A' }]}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.demoPillText}>🎓 Student Tenant</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => handleDemoSelect('employee')}
-                style={[styles.demoPill, { backgroundColor: '#581C87' }]}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.demoPillText}>💼 Employee Tenant</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => handleDemoSelect('warden')}
-                style={[styles.demoPill, { backgroundColor: '#14532D' }]}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.demoPillText}>🛡️ Property Warden</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => handleDemoSelect('owner')}
-                style={[styles.demoPill, { backgroundColor: '#7C2D12' }]}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.demoPillText}>👑 Super Admin Owner</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          )}
 
           {/* Standard Auth Actions */}
           <View style={styles.actions}>
@@ -129,16 +114,19 @@ export default function WelcomeScreen() {
             />
             <TouchableOpacity
               onPress={() => router.push('/(auth)/register/category')}
-              style={styles.registerBtn}
+              style={[styles.registerBtn, { borderColor: theme.border, backgroundColor: theme.card }]}
               activeOpacity={0.8}
             >
-              <Text style={styles.registerBtnText}>New Tenant? Register Here</Text>
+              <Text style={[styles.registerBtnText, { color: theme.text }]}>New Tenant? Register Here</Text>
             </TouchableOpacity>
           </View>
 
           {/* Footer */}
-          <Text style={styles.footer}>
+          <Text style={[styles.footer, { color: theme.textMuted }]}>
             Protected by Supabase Row-Level-Security & AES-256 Storage
+          </Text>
+          <Text style={[styles.footer, { color: theme.textMuted, marginTop: 2 }]}>
+            Theme: {preference === 'system' ? 'Following your device' : preference} · Tap ☀️ / 🌙 to change
           </Text>
         </ScrollView>
       </SafeAreaView>
@@ -179,24 +167,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.xs,
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
   },
   badgePill: {
-    backgroundColor: '#FFFFFF18',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: '#FFFFFF25',
   },
   badgePillText: {
-    color: '#E2E8F0',
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.xs,
   },
-  themeBtn: {
-    padding: Spacing.sm,
-    backgroundColor: '#FFFFFF15',
+  themePicker: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+  },
+  themeChip: {
+    paddingVertical: 6,
+    paddingHorizontal: Spacing.sm,
     borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    minWidth: 52,
+    alignItems: 'center',
+  },
+  themeChipText: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.xs,
+  },
+  configWarn: {
+    width: '100%',
+    borderWidth: 1,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    alignItems: 'center',
+  },
+  configWarnTitle: {
+    color: '#991B1B',
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: Typography.size.sm,
+  },
+  configWarnSub: {
+    color: '#7F1D1D',
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
+    marginTop: 4,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   scroll: {
     paddingHorizontal: Spacing.xl,
@@ -220,14 +239,12 @@ const styles = StyleSheet.create({
   },
   logoEmoji: { fontSize: 40 },
   appName: {
-    color: '#FFFFFF',
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size['3xl'],
     letterSpacing: 0.5,
     marginBottom: Spacing.xs,
   },
   tagline: {
-    color: '#94A3B8',
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.base,
     textAlign: 'center',
@@ -243,26 +260,21 @@ const styles = StyleSheet.create({
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF12',
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: '#FFFFFF15',
     gap: Spacing.xs,
   },
   featureIcon: { fontSize: 16 },
   featureLabel: {
-    color: '#E2E8F0',
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
   },
   demoSection: {
     width: '100%',
-    backgroundColor: '#FFFFFF0C',
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
-    borderColor: '#FFFFFF1E',
     padding: Spacing.base,
     marginBottom: Spacing.xl,
   },
@@ -270,13 +282,11 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   demoTitle: {
-    color: '#F8FAFC',
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.base,
     marginBottom: 2,
   },
   demoSubtitle: {
-    color: '#94A3B8',
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.xs,
   },
@@ -309,17 +319,13 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.lg,
     borderWidth: 1.5,
-    borderColor: '#FFFFFF40',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF0A',
   },
   registerBtnText: {
-    color: '#FFFFFF',
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.base,
   },
   footer: {
-    color: '#64748B',
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.xs,
     textAlign: 'center',

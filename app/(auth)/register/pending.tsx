@@ -28,7 +28,7 @@ export default function PendingScreen() {
 
         <View style={[styles.infoBox, { backgroundColor: Colors.info + '15', borderColor: Colors.info + '30' }]}>
           <Text style={[styles.infoText, { color: Colors.info }]}>
-            📧 You'll receive a notification when your registration is reviewed. This typically takes 24 hours.
+            📧 You will receive a notification when your registration is reviewed. This typically takes 24 hours.
           </Text>
         </View>
 

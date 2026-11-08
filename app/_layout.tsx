@@ -16,6 +16,8 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuthStore } from '../src/stores/authStore';
 import { useThemeStore } from '../src/stores/themeStore';
 import { Colors } from '../src/constants/theme';
+import { OfflineBanner } from '../src/components/OfflineBanner';
+import { sendDueReminders } from '../src/services/messaging';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,8 +33,8 @@ const queryClient = new QueryClient({
 });
 
 export default function RootLayout() {
-  const { initialize } = useAuthStore();
-  const { loadSavedTheme, isDark } = useThemeStore();
+  const { initialize, user } = useAuthStore();
+  const { loadSavedTheme, isDark, initSystemListener } = useThemeStore();
   const theme = isDark ? Colors.dark : Colors.light;
 
   const [fontsLoaded, fontError] = useFonts({
@@ -46,12 +48,26 @@ export default function RootLayout() {
   const [timedOut, setTimedOut] = React.useState(false);
 
   useEffect(() => {
+    initSystemListener();
     loadSavedTheme();
     initialize();
     // Safety fallback: after 2 seconds, proceed with system fonts if custom fonts lag
     const timer = setTimeout(() => setTimedOut(true), 2000);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    // Reload per-user theme preference whenever the signed-in user changes.
+    loadSavedTheme(user?.id);
+  }, [user?.id, loadSavedTheme]);
+
+  useEffect(() => {
+    // Fire rent-due reminders (5-day lead) once per app foreground session.
+    if (user) {
+      sendDueReminders().catch(() => {});
+    }
+  }, [user?.id]);
 
   // Continue if fonts are loaded, or if font error occurred, or after 2s safety timeout
   if (!fontsLoaded && !fontError && !timedOut) {
@@ -69,6 +85,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <StatusBar style={isDark ? 'light' : 'dark'} />
+          <OfflineBanner />
           <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="(auth)" />
@@ -81,4 +98,3 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
-

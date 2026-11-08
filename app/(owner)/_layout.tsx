@@ -18,6 +18,7 @@ export default function OwnerLayout() {
       const unsub = subscribeToNotifications(user.id);
       return unsub;
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const TAB_ICONS: Record<string, string> = {
@@ -25,7 +26,11 @@ export default function OwnerLayout() {
     wardens: '🛡️',
     approvals: '✅',
     reports: '📊',
+    rooms: '🏠',
+    notices: '📢',
+    activity: '👁️',
     settings: '⚙️',
+    profile: '👤',
   };
 
   return (
@@ -56,8 +61,17 @@ export default function OwnerLayout() {
       <Tabs.Screen name="wardens" options={{ title: 'Wardens' }} />
       <Tabs.Screen name="approvals" options={{ title: 'Approvals' }} />
       <Tabs.Screen name="reports" options={{ title: 'Reports' }} />
+      <Tabs.Screen name="rooms" options={{ title: 'Rooms' }} />
+      <Tabs.Screen name="notices" options={{ title: 'Notices' }} />
+      <Tabs.Screen name="activity" options={{ title: 'Activity' }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+        }}
+      />
     </Tabs>
   );
 }
-

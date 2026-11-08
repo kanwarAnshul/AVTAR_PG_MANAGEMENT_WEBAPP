@@ -89,16 +89,54 @@ export default function OwnerWardensScreen() {
           is_active: true,
         });
       }
+
+      // Invite: in-app push if the warden has the app, otherwise SMS/mail link.
+      const { sendNotification } = await import('../../src/services/messaging');
+      await sendNotification({
+        userId: wardenId,
+        type: 'invite',
+        title: '🛡️ Welcome to AVTAR PG Warden Portal',
+        body: 'You have been assigned as a property warden. Open the app to start managing beds, approvals and dues.',
+        data: { property_id: defaultProperty },
+      });
+      const { data: tokens } = await supabase
+        .from('push_tokens')
+        .select('id')
+        .eq('user_id', wardenId);
+      return { wardenId, hasPushToken: (tokens?.length ?? 0) > 0 };
     },
-    onSuccess: () => {
+    onSuccess: async ({ hasPushToken }) => {
       setActionLoading(false);
       setAddModalVisible(false);
+      const invitedEmail = email;
+      const invitedPhone = phone;
       setFullName('');
       setEmail('');
       setPassword('');
       setPhone('');
       queryClient.invalidateQueries({ queryKey: ['owner-wardens-list'] });
-      Alert.alert('Warden Added', 'Warden account created and assigned to the PG property.');
+      if (hasPushToken) {
+        Alert.alert('Warden Added + Invited', 'Account created. A push notification has been sent to the installed app.');
+        return;
+      }
+      Alert.alert(
+        'Warden Added — Invite Needed',
+        'Account created. The warden does not have the app installed yet.',
+        [
+          { text: 'Later', style: 'cancel' },
+          {
+            text: 'Send Invite Link',
+            onPress: async () => {
+              try {
+                const { sendWardenInvite } = await import('../../src/services/messaging');
+                await sendWardenInvite(invitedEmail, invitedPhone);
+              } catch {
+                Alert.alert('Invite', 'Could not open the mailer/SMS app on this device.');
+              }
+            },
+          },
+        ]
+      );
     },
     onError: (err: any) => {
       setActionLoading(false);

@@ -17,7 +17,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { supabase } from '../../src/lib/supabase';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/constants/theme';
 import { useThemeStore } from '../../src/stores/themeStore';
-import { useAuthStore, DemoPersona } from '../../src/stores/authStore';
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
 
@@ -31,20 +30,8 @@ type FormData = z.infer<typeof schema>;
 export default function LoginScreen() {
   const { isDark } = useThemeStore();
   const theme = isDark ? Colors.dark : Colors.light;
-  const { loginAsDemo } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
-
-  const handleDemoLogin = (persona: DemoPersona) => {
-    loginAsDemo(persona);
-    if (persona === 'owner') {
-      router.replace('/(owner)');
-    } else if (persona === 'warden') {
-      router.replace('/(warden)');
-    } else {
-      router.replace('/(tenant)');
-    }
-  };
 
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -173,43 +160,6 @@ export default function LoginScreen() {
               isLoading={isLoading}
               style={{ marginTop: Spacing.base }}
             />
-
-            <View style={styles.divider}>
-              <View style={[styles.line, { backgroundColor: theme.border }]} />
-              <Text style={[styles.orText, { color: theme.textMuted }]}>OR DEMO LOGIN</Text>
-              <View style={[styles.line, { backgroundColor: theme.border }]} />
-            </View>
-
-            {/* Quick Demo Switcher */}
-            <View style={styles.demoBox}>
-              <Text style={[styles.demoTitle, { color: theme.textSecondary }]}>⚡ 1-Tap Demo Switcher:</Text>
-              <View style={styles.demoBtnRow}>
-                <TouchableOpacity
-                  onPress={() => handleDemoLogin('student')}
-                  style={[styles.demoTag, { backgroundColor: '#1E3A8A' }]}
-                >
-                  <Text style={styles.demoTagText}>🎓 Student</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleDemoLogin('employee')}
-                  style={[styles.demoTag, { backgroundColor: '#581C87' }]}
-                >
-                  <Text style={styles.demoTagText}>💼 Employee</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleDemoLogin('warden')}
-                  style={[styles.demoTag, { backgroundColor: '#14532D' }]}
-                >
-                  <Text style={styles.demoTagText}>🛡️ Warden</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleDemoLogin('owner')}
-                  style={[styles.demoTag, { backgroundColor: '#7C2D12' }]}
-                >
-                  <Text style={styles.demoTagText}>👑 Owner</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
 
             <TouchableOpacity
               onPress={() => router.push('/(auth)/register/category')}

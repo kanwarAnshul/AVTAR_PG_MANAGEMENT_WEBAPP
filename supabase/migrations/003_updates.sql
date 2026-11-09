@@ -102,59 +102,116 @@ ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE warden_invites ENABLE ROW LEVEL SECURITY;
 
 -- Tenant requests
-CREATE POLICY "tenant_full_own_requests" ON tenant_requests FOR ALL
-  USING (tenant_id = my_tenant_id());
-CREATE POLICY "warden_full_requests" ON tenant_requests FOR ALL
-  USING (property_id IN (SELECT warden_property_ids()));
-CREATE POLICY "owner_full_requests" ON tenant_requests FOR ALL
-  USING (property_id IN (SELECT id FROM properties WHERE owner_id = auth.uid()));
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'tenant_requests' AND policyname = 'tenant_full_own_requests') THEN
+    CREATE POLICY "tenant_full_own_requests" ON tenant_requests FOR ALL
+      USING (tenant_id = my_tenant_id());
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'tenant_requests' AND policyname = 'warden_full_requests') THEN
+    CREATE POLICY "warden_full_requests" ON tenant_requests FOR ALL
+      USING (property_id IN (SELECT warden_property_ids()));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'tenant_requests' AND policyname = 'owner_full_requests') THEN
+    CREATE POLICY "owner_full_requests" ON tenant_requests FOR ALL
+      USING (property_id IN (SELECT id FROM properties WHERE owner_id = auth.uid()));
+  END IF;
+END $$;
 
 -- Daily presence (tenant writes own, warden/owner read property, roommates read same room)
-CREATE POLICY "tenant_writes_own_presence" ON daily_presence FOR ALL
-  USING (tenant_id = my_tenant_id());
-CREATE POLICY "tenant_reads_room_presence" ON daily_presence FOR SELECT
-  USING (room_id IN (SELECT room_id FROM tenancies WHERE tenant_id = my_tenant_id() AND status = 'active'));
-CREATE POLICY "warden_full_presence" ON daily_presence FOR ALL
-  USING (property_id IN (SELECT warden_property_ids()));
-CREATE POLICY "owner_full_presence" ON daily_presence FOR ALL
-  USING (property_id IN (SELECT id FROM properties WHERE owner_id = auth.uid()));
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'daily_presence' AND policyname = 'tenant_writes_own_presence') THEN
+    CREATE POLICY "tenant_writes_own_presence" ON daily_presence FOR ALL
+      USING (tenant_id = my_tenant_id());
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'daily_presence' AND policyname = 'tenant_reads_room_presence') THEN
+    CREATE POLICY "tenant_reads_room_presence" ON daily_presence FOR SELECT
+      USING (room_id IN (SELECT room_id FROM tenancies WHERE tenant_id = my_tenant_id() AND status = 'active'));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'daily_presence' AND policyname = 'warden_full_presence') THEN
+    CREATE POLICY "warden_full_presence" ON daily_presence FOR ALL
+      USING (property_id IN (SELECT warden_property_ids()));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'daily_presence' AND policyname = 'owner_full_presence') THEN
+    CREATE POLICY "owner_full_presence" ON daily_presence FOR ALL
+      USING (property_id IN (SELECT id FROM properties WHERE owner_id = auth.uid()));
+  END IF;
+END $$;
 
 -- Emergency alerts
-CREATE POLICY "tenant_full_own_alerts" ON emergency_alerts FOR ALL
-  USING (tenant_id = my_tenant_id());
-CREATE POLICY "tenant_reads_room_alerts" ON emergency_alerts FOR SELECT
-  USING (room_id IN (SELECT room_id FROM tenancies WHERE tenant_id = my_tenant_id() AND status = 'active'));
-CREATE POLICY "warden_full_alerts" ON emergency_alerts FOR ALL
-  USING (property_id IN (SELECT warden_property_ids()));
-CREATE POLICY "owner_full_alerts" ON emergency_alerts FOR ALL
-  USING (property_id IN (SELECT id FROM properties WHERE owner_id = auth.uid()));
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'emergency_alerts' AND policyname = 'tenant_full_own_alerts') THEN
+    CREATE POLICY "tenant_full_own_alerts" ON emergency_alerts FOR ALL
+      USING (tenant_id = my_tenant_id());
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'emergency_alerts' AND policyname = 'tenant_reads_room_alerts') THEN
+    CREATE POLICY "tenant_reads_room_alerts" ON emergency_alerts FOR SELECT
+      USING (room_id IN (SELECT room_id FROM tenancies WHERE tenant_id = my_tenant_id() AND status = 'active'));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'emergency_alerts' AND policyname = 'warden_full_alerts') THEN
+    CREATE POLICY "warden_full_alerts" ON emergency_alerts FOR ALL
+      USING (property_id IN (SELECT warden_property_ids()));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'emergency_alerts' AND policyname = 'owner_full_alerts') THEN
+    CREATE POLICY "owner_full_alerts" ON emergency_alerts FOR ALL
+      USING (property_id IN (SELECT id FROM properties WHERE owner_id = auth.uid()));
+  END IF;
+END $$;
 
 -- App settings (privacy policy)
-CREATE POLICY "public_read_settings" ON app_settings FOR SELECT USING (true);
-CREATE POLICY "owner_write_settings" ON app_settings FOR ALL USING (is_owner());
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'app_settings' AND policyname = 'public_read_settings') THEN
+    CREATE POLICY "public_read_settings" ON app_settings FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'app_settings' AND policyname = 'owner_write_settings') THEN
+    CREATE POLICY "owner_write_settings" ON app_settings FOR ALL USING (is_owner());
+  END IF;
+END $$;
 
 -- Warden invites
-CREATE POLICY "owner_full_invites" ON warden_invites FOR ALL USING (is_owner());
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'warden_invites' AND policyname = 'owner_full_invites') THEN
+    CREATE POLICY "owner_full_invites" ON warden_invites FOR ALL USING (is_owner());
+  END IF;
+END $$;
 
 -- ── 11. FIX: notifications — owner/warden must be able to notify tenants ──
--- Drop the restrictive policy and replace with role-aware rules.
-DROP POLICY IF EXISTS "users_own_notifications" ON notifications;
-CREATE POLICY "users_read_own_notifications" ON notifications FOR SELECT
-  USING (user_id = auth.uid());
-CREATE POLICY "users_update_own_notifications" ON notifications FOR UPDATE
-  USING (user_id = auth.uid());
-CREATE POLICY "owner_can_notify_anyone" ON notifications FOR INSERT
-  WITH CHECK (is_owner());
-CREATE POLICY "warden_can_notify_property" ON notifications FOR INSERT
-  WITH CHECK (is_warden());
-CREATE POLICY "users_insert_own_notifications" ON notifications FOR INSERT
-  WITH CHECK (user_id = auth.uid());
+-- Remove the old restrictive policy (policy only — NO table/data is deleted),
+-- then add role-aware rules.
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'notifications' AND policyname = 'users_own_notifications') THEN
+    DROP POLICY "users_own_notifications" ON notifications;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'notifications' AND policyname = 'users_read_own_notifications') THEN
+    CREATE POLICY "users_read_own_notifications" ON notifications FOR SELECT
+      USING (user_id = auth.uid());
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'notifications' AND policyname = 'users_update_own_notifications') THEN
+    CREATE POLICY "users_update_own_notifications" ON notifications FOR UPDATE
+      USING (user_id = auth.uid());
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'notifications' AND policyname = 'owner_can_notify_anyone') THEN
+    CREATE POLICY "owner_can_notify_anyone" ON notifications FOR INSERT
+      WITH CHECK (is_owner());
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'notifications' AND policyname = 'warden_can_notify_property') THEN
+    CREATE POLICY "warden_can_notify_property" ON notifications FOR INSERT
+      WITH CHECK (is_warden());
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'notifications' AND policyname = 'users_insert_own_notifications') THEN
+    CREATE POLICY "users_insert_own_notifications" ON notifications FOR INSERT
+      WITH CHECK (user_id = auth.uid());
+  END IF;
+END $$;
 
 -- ── 12. FIX: tenant self-update for presence quick-path (defaults already safe) ──
 -- Allow tenants to update their own tenancy due_day (before-15th rule is
 -- enforced in the app; RLS here only scopes to own row).
-CREATE POLICY "tenant_update_own_tenancy_due_day" ON tenancies FOR UPDATE
-  USING (tenant_id = my_tenant_id());
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'tenancies' AND policyname = 'tenant_update_own_tenancy_due_day') THEN
+    CREATE POLICY "tenant_update_own_tenancy_due_day" ON tenancies FOR UPDATE
+      USING (tenant_id = my_tenant_id());
+  END IF;
+END $$;
 
 -- ── 13. Helpful indexes ──
 CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON invoices(due_date);

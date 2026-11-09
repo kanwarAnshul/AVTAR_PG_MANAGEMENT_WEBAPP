@@ -102,11 +102,23 @@ avtar-pg-manager/
 2. Open the **SQL Editor** in the Supabase Dashboard.
 3. Run `supabase/migrations/001_initial_schema.sql`.
 4. Run `supabase/migrations/002_rls_policies.sql`.
-5. Run `supabase/migrations/003_updates.sql`.
-6. Run `supabase/migrations/004_owner_setup.sql`.
-7. Under **Storage**, create two **private** buckets:
+5. Run `supabase/SUPABASE_SETUP.sql` (this is migrations **003 + 004** combined).
+   - Supabase may show a **destructive-query warning**. It is caused by one line: `DROP POLICY "users_own_notifications" ON notifications;` — it removes an old security policy only. **No table, column, schema, row or data is deleted.** It is safe to confirm.
+   - The script is re-runnable: tables/columns/indexes use `IF NOT EXISTS`, and policies are created only if missing.
+6. Under **Storage**, create two **private** buckets:
    - `tenant_docs`
    - `complaint_photos`
+
+**Verify the setup** — run this in the SQL Editor and expect 5 tables + 2 functions:
+```sql
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public'
+  AND table_name IN ('tenant_requests','daily_presence','emergency_alerts','app_settings','warden_invites');
+
+SELECT proname FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public' AND p.proname IN ('owner_exists','claim_first_owner');
+```
 
 ### 1b. Create the first Super Admin (owner)
 There is no public owner registration (that would let anyone become owner). The app uses one shared sign-in and detects the role from the database.

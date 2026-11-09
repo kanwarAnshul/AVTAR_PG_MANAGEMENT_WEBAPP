@@ -1,7 +1,7 @@
 {
   "name": "avtar-pg-manager",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
     "@hookform/resolvers": "^3.10.0",

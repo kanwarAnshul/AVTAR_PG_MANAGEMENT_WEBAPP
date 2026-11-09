@@ -1,8 +1,4 @@
-import { registerRootComponent } from 'expo';
-
-import App from './App';
-
-// registerRootComponent calls AppRegistry.registerComponent('main', () => App);
-// It also ensures that whether you load the app in Expo Go or in a native build,
-// the environment is set up appropriately
-registerRootComponent(App);
+// Custom entry: register the Expo Router entry (app/_layout.tsx is the root).
+// Keep this file so Metro resolves `main` consistently; the actual root
+// layout lives in ./app/_layout.tsx per Expo Router conventions (SDK 58).
+import 'expo-router/entry';

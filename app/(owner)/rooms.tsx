@@ -41,6 +41,13 @@ export default function OwnerRoomsScreen() {
   const [photos, setPhotos] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
+  // First-run property setup (a room must belong to a property)
+  const [propertyModalVisible, setPropertyModalVisible] = useState(false);
+  const [propertyName, setPropertyName] = useState('');
+  const [propertyAddress, setPropertyAddress] = useState('');
+  const [propertyCity, setPropertyCity] = useState('');
+  const [propertySaving, setPropertySaving] = useState(false);
+
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['owner-rooms-list'],
     queryFn: async () => {
@@ -128,6 +135,38 @@ export default function OwnerRoomsScreen() {
     },
   });
 
+  const createPropertyMutation = useMutation({
+    mutationFn: async () => {
+      if (!propertyName.trim() || !propertyAddress.trim()) {
+        throw new Error('Property name and address are required');
+      }
+      if (!user?.id) throw new Error('You must be signed in as the Super Admin.');
+      setPropertySaving(true);
+
+      const { error } = await supabase.from('properties').insert({
+        owner_id: user.id,
+        name: propertyName.trim(),
+        address: propertyAddress.trim(),
+        city: propertyCity.trim() || null,
+      } as any);
+      if (error) throw new Error(friendlyDbError(error));
+    },
+    onSuccess: () => {
+      setPropertySaving(false);
+      setPropertyModalVisible(false);
+      setPropertyName('');
+      setPropertyAddress('');
+      setPropertyCity('');
+      queryClient.invalidateQueries({ queryKey: ['owner-rooms-list'] });
+      queryClient.invalidateQueries({ queryKey: ['owner-overall-stats'] });
+      Alert.alert('Property Created', 'Now add rooms to this property.');
+    },
+    onError: (err: any) => {
+      setPropertySaving(false);
+      Alert.alert('Property Setup Failed', err?.message ?? 'Could not create property');
+    },
+  });
+
   const toggleActiveMutation = useMutation({
     mutationFn: async (room: any) => {
       const { error } = await supabase
@@ -146,20 +185,52 @@ export default function OwnerRoomsScreen() {
   const beds = data?.beds || [];
   const bedsByRoom = (roomId: string) => beds.filter((b: any) => b.room_id === roomId).length;
 
+  const properties = data?.properties || [];
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
       <ScreenHeader
         title="Rooms & Inventory"
-        subtitle={`${rooms.length} rooms · photos, BHK & location`}
+        subtitle={`${properties.length} ${properties.length === 1 ? 'property' : 'properties'} · ${rooms.length} rooms`}
         right={
-          <Button title="+ Add Room" size="sm" fullWidth={false} onPress={() => setModalVisible(true)} />
+          <View style={styles.headerBtns}>
+            <Button
+              title="+ Property"
+              size="sm"
+              fullWidth={false}
+              variant="secondary"
+              onPress={() => setPropertyModalVisible(true)}
+            />
+            <Button
+              title="+ Add Room"
+              size="sm"
+              fullWidth={false}
+              onPress={() => {
+                if (properties.length === 0) {
+                  Alert.alert('Create a property first', 'Rooms must belong to a property. Set one up now.', [
+                    { text: 'Later', style: 'cancel' },
+                    { text: 'Create Property', onPress: () => setPropertyModalVisible(true) },
+                  ]);
+                  return;
+                }
+                setModalVisible(true);
+              }}
+            />
+          </View>
         }
       />
       <ScrollView
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
       >
-        {rooms.length === 0 ? (
+        {properties.length === 0 ? (
+          <EmptyState
+            icon="🏢"
+            title="Set Up Your Property"
+            description="Every room belongs to a property. Create your PG/hostel property first, then add rooms, beds and photos."
+            action={{ label: 'Create Property', onPress: () => setPropertyModalVisible(true) }}
+          />
+        ) : rooms.length === 0 ? (
           <EmptyState
             icon="🏠"
             title="No Rooms Yet"
@@ -209,6 +280,52 @@ export default function OwnerRoomsScreen() {
           <Text style={[styles.demoNote, { color: theme.textMuted }]}>Live data: rooms load directly from your Supabase database.</Text>
         )}
       </ScrollView>
+
+      <Modal visible={propertyModalVisible} transparent animationType="slide">
+        <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Create Property</Text>
+            <Text style={[styles.videoNote, { color: theme.textSecondary, marginBottom: Spacing.sm }]}>
+              This is your PG/hostel building. Rooms, beds, wardens and tenants are all linked to it.
+            </Text>
+            <Input
+              label="Property Name"
+              value={propertyName}
+              onChangeText={setPropertyName}
+              placeholder="e.g. Avtar Singh PG — Sector 15"
+              required
+            />
+            <Input
+              label="Full Address"
+              value={propertyAddress}
+              onChangeText={setPropertyAddress}
+              placeholder="Street, area, landmark"
+              required
+            />
+            <Input
+              label="City"
+              value={propertyCity}
+              onChangeText={setPropertyCity}
+              placeholder="e.g. Chandigarh"
+            />
+            <View style={styles.modalBtns}>
+              <Button
+                title="Cancel"
+                variant="secondary"
+                onPress={() => setPropertyModalVisible(false)}
+                style={{ flex: 1, marginRight: Spacing.sm }}
+              />
+              <Button
+                title="Create Property"
+                variant="primary"
+                onPress={() => createPropertyMutation.mutate()}
+                isLoading={propertySaving}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
@@ -262,6 +379,7 @@ export default function OwnerRoomsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: Spacing.base, paddingBottom: Spacing['3xl'] },
+  headerBtns: { flexDirection: 'row', gap: Spacing.xs },
   card: { padding: Spacing.base, marginBottom: Spacing.md },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: Spacing.sm },
   roomNo: { fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.base },

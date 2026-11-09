@@ -11,11 +11,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../../src/lib/supabase';
+import { supabase, createIsolatedClient } from '../../src/lib/supabase';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/constants/theme';
 import { useThemeStore } from '../../src/stores/themeStore';
 import { useAuthStore } from '../../src/stores/authStore';
-import { formatDate } from '../../src/utils/helpers';
+import { formatDate, friendlyDbError } from '../../src/utils/helpers';
 import { Card } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
 import { Button } from '../../src/components/ui/Button';
@@ -61,33 +61,48 @@ export default function OwnerWardensScreen() {
       if (!fullName.trim() || !email.trim() || !password.trim()) {
         throw new Error('Please fill all required fields');
       }
+      if (!data?.properties?.[0]?.id) {
+        throw new Error('Create a property first (Rooms screen → Create Property), then add wardens.');
+      }
       setActionLoading(true);
 
-      // Create warden auth user with role 'warden'
-      const { data: authData, error: aError } = await supabase.auth.signUp({
+      // Create the auth account on an ISOLATED client: signUp() on the shared
+      // client would swap the owner's session for the new warden's session.
+      // Migration 004 always creates the profile as 'tenant', so the role is
+      // promoted afterwards by the owner-only RPC (migration 005).
+      const isolated = createIsolatedClient();
+      const { data: authData, error: aError } = await isolated.auth.signUp({
         email: email.toLowerCase().trim(),
         password,
         options: {
           data: {
-            role: 'warden',
             full_name: fullName.trim(),
           },
         },
       });
 
-      if (aError || !authData.user) throw aError || new Error('Failed to register warden user');
+      if (aError) throw new Error(friendlyDbError(aError));
+      const wardenId = authData.user?.id;
+      if (!wardenId) throw new Error('Failed to register warden user');
 
-      const wardenId = authData.user.id;
+      const { error: promoteError } = await supabase.rpc('promote_to_warden', {
+        target_user_id: wardenId,
+        warden_name: fullName.trim(),
+        warden_phone: phone.trim() || null,
+      });
+      if (promoteError) throw new Error(friendlyDbError(promoteError));
+
       const defaultProperty = data?.properties?.[0]?.id;
 
       if (defaultProperty) {
-        await supabase.from('property_memberships').insert({
+        const { error: memberError } = await supabase.from('property_memberships').insert({
           user_id: wardenId,
           property_id: defaultProperty,
           role: 'warden',
           assigned_by: user?.id,
           is_active: true,
         });
+        if (memberError) throw new Error(friendlyDbError(memberError));
       }
 
       // Invite: in-app push if the warden has the app, otherwise SMS/mail link.
@@ -116,12 +131,15 @@ export default function OwnerWardensScreen() {
       setPhone('');
       queryClient.invalidateQueries({ queryKey: ['owner-wardens-list'] });
       if (hasPushToken) {
-        Alert.alert('Warden Added + Invited', 'Account created. A push notification has been sent to the installed app.');
+        Alert.alert(
+          'Warden Added + Invited',
+          'Account created and promoted to warden. A push notification has been sent to the installed app.\n\nIf email confirmation is enabled in Supabase, the warden must confirm the email before signing in.'
+        );
         return;
       }
       Alert.alert(
         'Warden Added — Invite Needed',
-        'Account created. The warden does not have the app installed yet.',
+        'Account created and promoted to warden. The warden does not have the app installed yet.\n\nIf email confirmation is enabled in Supabase, they must confirm the email before signing in.',
         [
           { text: 'Later', style: 'cancel' },
           {

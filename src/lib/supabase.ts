@@ -50,6 +50,23 @@ export const supabase = createClient(
   }
 );
 
+// Isolated client factory.
+// Used when the owner creates another account (warden) from inside the app:
+// auth.signUp() on the shared client would REPLACE the owner's session with
+// the new user's session. This client never persists or refreshes sessions,
+// so the caller's session stays intact.
+export const createIsolatedClient = () => {
+  if (!isSupabaseConfigured) throw new Error(SUPABASE_CONFIG_ERROR);
+  return createClient(configuredUrl as string, configuredAnonKey as string, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+      storageKey: `sb-isolated-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    },
+  });
+};
+
 // Storage helpers (live uploads only — no simulated data)
 export const getSignedUrl = async (bucket: string, path: string, expiresIn = 60) => {
   assertConfigured();

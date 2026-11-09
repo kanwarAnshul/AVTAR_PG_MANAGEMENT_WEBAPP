@@ -102,9 +102,20 @@ avtar-pg-manager/
 2. Open the **SQL Editor** in the Supabase Dashboard.
 3. Run `supabase/migrations/001_initial_schema.sql`.
 4. Run `supabase/migrations/002_rls_policies.sql`.
-5. Under **Storage**, create two **private** buckets:
+5. Run `supabase/migrations/003_updates.sql`.
+6. Run `supabase/migrations/004_owner_setup.sql`.
+7. Under **Storage**, create two **private** buckets:
    - `tenant_docs`
    - `complaint_photos`
+
+### 1b. Create the first Super Admin (owner)
+There is no public owner registration (that would let anyone become owner). The app uses one shared sign-in and detects the role from the database.
+
+1. Open the app → **Sign In with Email** screen → tap **👑 First-time Super Admin? Set up owner access** (also available on the Welcome screen).
+2. Enter the owner email + password and tap **Create Super Admin**.
+3. If email confirmation is enabled in Supabase, confirm the email and tap the button again.
+4. The account is promoted to `owner` **once**, then the setup screen locks permanently.
+5. Wardens are created later from the owner portal; tenants use **New Tenant? Register Here**.
 
 ### 2. Configure Environment
 Create a `.env` file in `avtar-pg-manager/` based on `.env.example`:
@@ -113,7 +124,7 @@ EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
-### 3. Run Development Server & Instant Demo
+### 3. Run Development Server
 ```bash
 npm install
 npx expo start
@@ -121,7 +132,7 @@ npx expo start
 - Press `a` for Android Emulator or scan QR with Expo Go app on your physical device.
 - Press `i` for iOS Simulator.
 - Press `w` for Web preview.
-- **⚡ 1-Tap Demo Switcher:** On the welcome screen, tap **🎓 Student**, **💼 Employee**, **🛡️ Warden**, or **👑 Owner** to preview any role instantly without needing manual cloud setup first!
+- Sign in with a real account (owner / warden / approved tenant). No demo accounts — all data is live from Supabase.
 
 ---
 

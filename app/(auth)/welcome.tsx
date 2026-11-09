@@ -119,6 +119,16 @@ export default function WelcomeScreen() {
             >
               <Text style={[styles.registerBtnText, { color: theme.text }]}>New Tenant? Register Here</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/owner-setup')}
+              style={styles.adminLink}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.adminLinkText, { color: theme.textMuted }]}>
+                👑 First-time Super Admin setup
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Footer */}
@@ -324,6 +334,14 @@ const styles = StyleSheet.create({
   registerBtnText: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.base,
+  },
+  adminLink: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xs,
+  },
+  adminLinkText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.sm,
   },
   footer: {
     fontFamily: Typography.fontFamily.regular,

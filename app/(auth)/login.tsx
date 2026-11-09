@@ -172,12 +172,22 @@ export default function LoginScreen() {
                 </Text>
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/owner-setup')}
+              style={styles.adminLink}
+            >
+              <Text style={[styles.adminLinkText, { color: theme.textMuted }]}>
+                👑 First-time Super Admin? Set up owner access
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Info */}
           <View style={[styles.infoBox, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}>
             <Text style={[styles.infoText, { color: theme.textSecondary }]}>
-              🛡️ Your login is protected by Supabase Auth with RLS security. Only approved tenants can access the app.
+              🔐 One sign-in for all roles — owner, warden and approved tenant. Your role is detected automatically
+              from your account.
             </Text>
           </View>
         </ScrollView>
@@ -269,6 +279,16 @@ const styles = StyleSheet.create({
   registerText: {
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.base,
+  },
+  adminLink: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  adminLinkText: {
+    fontFamily: Typography.fontFamily.medium,
+    fontSize: Typography.size.sm,
+    textAlign: 'center',
   },
   infoBox: {
     padding: Spacing.md,

@@ -204,6 +204,7 @@ cd android
 ```
 
 **Notes:**
+- **Windows long paths:** Android's CMake/ninja step mirrors absolute source paths into its object directory, which easily exceeds 260 characters and fails with `ninja: error: mkdir(CMakeFiles/...): No such file or directory`. If the project path is longer than 45 characters, the script automatically mirrors the project to a short staging folder (`C:\bld`) and builds there, then copies the APK back. Pass `-WorkDir C:\some\short\path` to change it, or `-NoStage` to disable (only if your project path is already short).
 - The release APK is signed with the **debug keystore** (Expo default), so it installs fine on phones but **cannot be uploaded to Play Store**. Use EAS or a custom keystore for store builds.
 - `EXPO_PUBLIC_*` values are read from `.env` at bundle time — keep `.env` present when building locally.
 - `android/` and `ios/` are generated (Continuous Native Generation). Never edit them by hand; change `app.json`/config plugins and re-run `-Clean`.

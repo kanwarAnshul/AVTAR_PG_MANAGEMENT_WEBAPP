@@ -99,7 +99,16 @@ if (-not $NoStage -and ($WorkDir -or $root.Length -gt 45)) {
     Set-Content -Path $marker -Value $root -NoNewline
 
     # /E copies newer files, keeps existing android/ for incremental builds.
-    robocopy $root $WorkDir /E /XD android .expo .expo-export-check .git /NFL /NDL /NJH /NJS /NP | Out-Null
+    # NOTE: /XD must use full paths — a bare name like "android" would also
+    # exclude every node_modules/**/android source folder.
+    $excludeDirs = @(
+      (Join-Path $root 'android'),
+      (Join-Path $root '.expo'),
+      (Join-Path $root '.expo-export-check'),
+      (Join-Path $root '.git'),
+      (Join-Path $root 'dist')
+    )
+    robocopy $root $WorkDir /E /XD $excludeDirs /NFL /NDL /NJH /NJS /NP | Out-Null
     if ($LASTEXITCODE -gt 7) { throw "robocopy failed (exit $LASTEXITCODE)." }
     $buildRoot = $WorkDir
     Write-Host "Staged: $buildRoot"

@@ -173,15 +173,46 @@ npm run typecheck
 
 ## 📱 Building Production Binaries
 
-### Android (APK)
-```bash
-# 1. Generate native Android project
-npx expo prebuild --platform android
+### Android (APK) — local build, no EAS
 
-# 2. Build release APK locally
+**Requirements (one-time, on the build machine):**
+- **JDK 17** — `winget install EclipseAdoptium.Temurin.17.JDK`
+- **Android SDK** — via Android Studio, or `sdkmanager` (needs `platform-tools`, a `platforms;android-3x`, `build-tools` and `ndk`)
+- Windows long paths enabled (`LongPathsEnabled = 1`) — avoids the classic `path too long` Gradle failure
+
+**Build (one command):**
+```powershell
+npm run build:apk
+```
+or with options:
+```powershell
+# regenerate android/ from app.json (do this after changing icons, splash, plugins)
+powershell -ExecutionPolicy Bypass -File scripts\build-android-apk.ps1 -Clean
+
+# faster, smaller APK for modern phones only
+powershell -ExecutionPolicy Bypass -File scripts\build-android-apk.ps1 -Architectures arm64-v8a
+```
+
+The script finds JDK 17 + the Android SDK, writes `android/local.properties`, runs `:app:assembleRelease`, and copies the result to `avtar-pg-<version>-local.apk` in the project root.
+
+Manual equivalent:
+```bash
+npx expo prebuild --platform android
 cd android
 ./gradlew assembleRelease
-# Output located at: android/app/build/outputs/apk/release/app-release.apk
+# android/app/build/outputs/apk/release/app-release.apk
+```
+
+**Notes:**
+- The release APK is signed with the **debug keystore** (Expo default), so it installs fine on phones but **cannot be uploaded to Play Store**. Use EAS or a custom keystore for store builds.
+- `EXPO_PUBLIC_*` values are read from `.env` at bundle time — keep `.env` present when building locally.
+- `android/` and `ios/` are generated (Continuous Native Generation). Never edit them by hand; change `app.json`/config plugins and re-run `-Clean`.
+- If Gradle reports a Java version error, `JAVA_HOME` is pointing at a JDK newer than 17 — the script overrides it for the build.
+
+### Android (APK/AAB via EAS — cloud, no local Android SDK needed)
+```bash
+npx eas-cli build --platform android --profile preview --non-interactive   # APK
+npx eas-cli build --platform android --profile production                  # AAB for Play Store
 ```
 
 ### iOS (IPA via EAS Build)

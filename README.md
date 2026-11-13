@@ -204,7 +204,11 @@ cd android
 ```
 
 **Notes:**
-- **Windows long paths:** Android's CMake/ninja step mirrors absolute source paths into its object directory, which easily exceeds 260 characters and fails with `ninja: error: mkdir(CMakeFiles/...): No such file or directory`. If the project path is longer than 45 characters, the script automatically mirrors the project to a short staging folder (`C:\bld`) and builds there, then copies the APK back. Pass `-WorkDir C:\some\short\path` to change it, or `-NoStage` to disable (only if your project path is already short).
+- **Windows long paths:** two things are needed, and the script handles both.
+  1. The Android SDK's bundled **ninja 1.10.2** is capped at 260 characters and fails with `ninja: error: mkdir(CMakeFiles/...): No such file or directory` on React Native's codegen paths. The script checks the installed ninja version and, if it is older than 1.12, drops in a long-path capable build (the original is kept as `ninja-<version>.bak.exe` next to it).
+  2. If the project path is longer than 45 characters, the script mirrors the project to a short staging folder (`C:\bld`) and builds there, then copies the APK back. Pass `-WorkDir C:\some\short\path` to change it, or `-NoStage` to disable (only if your project path is already short).
+
+  If the ninja download is blocked (offline machine), grab `ninja-win.zip` from https://github.com/ninja-build/ninja/releases and replace `<SDK>\cmake\3.22.1\bin\ninja.exe` manually.
 - The release APK is signed with the **debug keystore** (Expo default), so it installs fine on phones but **cannot be uploaded to Play Store**. Use EAS or a custom keystore for store builds.
 - `EXPO_PUBLIC_*` values are read from `.env` at bundle time — keep `.env` present when building locally.
 - `android/` and `ios/` are generated (Continuous Native Generation). Never edit them by hand; change `app.json`/config plugins and re-run `-Clean`.

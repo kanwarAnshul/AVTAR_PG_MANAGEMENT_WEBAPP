@@ -59,6 +59,71 @@ function Find-AndroidSdk {
   throw "Android SDK not found. Install Android Studio (or the SDK) and set ANDROID_HOME."
 }
 
+# The Android SDK ships ninja 1.10.2 with CMake 3.22.1. That build is capped at
+# MAX_PATH, so React Native's codegen paths fail with
+#   ninja: error: mkdir(...): No such file or directory
+# even when the project lives in a short folder. ninja >= 1.12 honours Windows
+# long paths, so upgrade the SDK's ninja in place (original kept as a .bak).
+function Ensure-LongPathNinja {
+  param([string]$Sdk)
+
+  $ninjaDirs = Get-ChildItem (Join-Path $Sdk 'cmake') -Directory -ErrorAction SilentlyContinue |
+    ForEach-Object { Join-Path $_.FullName 'bin' } |
+    Where-Object { Test-Path (Join-Path $_ 'ninja.exe') }
+
+  if (-not $ninjaDirs) { return }
+
+  $needed = $false
+  foreach ($dir in $ninjaDirs) {
+    $versionText = (& (Join-Path $dir 'ninja.exe') --version 2>&1) -join ''
+    $version = $null
+    if (-not [version]::TryParse($versionText.Trim(), [ref]$version)) { $version = [version]'0.0.0' }
+    if ($version -lt [version]'1.12.0') { $needed = $true }
+    else { Write-Host "ninja $version in $dir - OK" }
+  }
+  if (-not $needed) { return }
+
+  # Cache the downloaded binary so later builds work offline.
+  $cacheDir = Join-Path $env:LOCALAPPDATA 'avtar-pg-build'
+  $cachedNinja = Join-Path $cacheDir 'ninja.exe'
+  if (-not (Test-Path $cachedNinja)) {
+    Write-Host "Downloading a long-path capable ninja..."
+    try {
+      $ProgressPreference = 'SilentlyContinue'
+      New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
+      $zip = Join-Path $cacheDir 'ninja-win.zip'
+      $url = 'https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-win.zip'
+      try {
+        $release = Invoke-RestMethod 'https://api.github.com/repos/ninja-build/ninja/releases/latest' -TimeoutSec 30
+        $asset = $release.assets | Where-Object { $_.name -eq 'ninja-win.zip' } | Select-Object -First 1
+        if ($asset) { $url = $asset.browser_download_url }
+      }
+      catch { }
+      Invoke-WebRequest $url -OutFile $zip -TimeoutSec 120
+      Expand-Archive $zip -DestinationPath $cacheDir -Force
+      Remove-Item $zip -Force -ErrorAction SilentlyContinue
+    }
+    catch {
+      Write-Warning "Could not download ninja 1.13 ($($_.Exception.Message))."
+      Write-Warning "Install it manually from https://github.com/ninja-build/ninja/releases"
+      Write-Warning "and replace <SDK>\cmake\3.22.1\bin\ninja.exe, or the native build will fail."
+      return
+    }
+  }
+
+  foreach ($dir in $ninjaDirs) {
+    $target = Join-Path $dir 'ninja.exe'
+    $versionText = (& $target --version 2>&1) -join ''
+    $version = $null
+    if ([version]::TryParse($versionText.Trim(), [ref]$version) -and $version -ge [version]'1.12.0') { continue }
+
+    $backup = Join-Path $dir "ninja-$($versionText.Trim()).bak.exe"
+    if (-not (Test-Path $backup)) { Copy-Item $target $backup -Force }
+    Copy-Item $cachedNinja $target -Force
+    Write-Host "Upgraded ninja in $dir ($versionText -> $(& $target --version))"
+  }
+}
+
 $jdk = Find-Jdk17
 $sdk = Find-AndroidSdk
 
@@ -70,6 +135,8 @@ $env:PATH = "$jdk\bin;$env:PATH"
 Write-Host "JDK: $jdk"
 Write-Host "SDK: $sdk"
 Write-Host "Project: $root"
+
+Ensure-LongPathNinja -Sdk $sdk
 
 # --- Long-path staging -------------------------------------------------------
 $buildRoot = $root

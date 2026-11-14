@@ -83,16 +83,69 @@ export const uploadFile = async (
   file: { uri: string; type: string; name: string }
 ) => {
   assertConfigured();
+
+  // Storage RLS requires an authenticated session. This produces a clear
+  // message instead of the raw "new row violates row level security policy".
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (!sessionData.session) {
+    throw new Error(
+      'You are not signed in, so the upload was blocked. If you just registered, confirm your email, sign in, and submit your documents again.'
+    );
+  }
+
   const response = await fetch(file.uri);
   const blob = await response.blob();
   const { error } = await supabase.storage
     .from(bucket)
     .upload(path, blob, {
       contentType: file.type,
-      upsert: false,
+      // Retries are common (a registration insert can fail after the
+      // upload). Overwriting the caller's own folder is allowed by the
+      // UPDATE storage policies in migration 006.
+      upsert: true,
     });
   if (error) throw error;
   return path;
+};
+
+// ── Password reset via SMS OTP ──────────────────────────────
+export interface OtpRequestResult {
+  ok: boolean;
+  error?: string;
+  delivery?: 'sms' | 'demo';
+  phone?: string;
+  dev_otp?: string;
+  message?: string;
+}
+
+export interface OtpResetResult {
+  ok: boolean;
+  error?: string;
+  message?: string;
+}
+
+export const requestPasswordOtp = async (identifier: string): Promise<OtpRequestResult> => {
+  assertConfigured();
+  const { data, error } = await supabase.rpc('request_password_otp', {
+    p_identifier: identifier,
+  });
+  if (error) throw error;
+  return data as OtpRequestResult;
+};
+
+export const resetPasswordWithOtp = async (
+  identifier: string,
+  otp: string,
+  newPassword: string
+): Promise<OtpResetResult> => {
+  assertConfigured();
+  const { data, error } = await supabase.rpc('reset_password_with_otp', {
+    p_identifier: identifier,
+    p_otp: otp,
+    p_new_password: newPassword,
+  });
+  if (error) throw error;
+  return data as OtpResetResult;
 };
 
 // PAN encryption helper (uses pgcrypto via RPC — only owner can decrypt)

@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase, uploadFile } from '../../../src/lib/supabase';
+import { friendlyDbError } from '../../../src/utils/helpers';
 import { Colors, Typography, Spacing, BorderRadius, MAX_IMAGE_SIZE_BYTES, IMAGE_COMPRESS_SIZE, IMAGE_COMPRESS_QUALITY, ADDRESS_PROOF_TYPES } from '../../../src/constants/theme';
 import { useThemeStore } from '../../../src/stores/themeStore';
 import { Button } from '../../../src/components/ui/Button';
@@ -99,10 +100,20 @@ export default function StudentRegisterScreen() {
         email: data.email.toLowerCase().trim(),
         password: data.password,
         options: {
-          data: { role: 'tenant', full_name: data.full_name },
+          data: { role: 'tenant', full_name: data.full_name, phone: data.phone },
         },
       });
       if (authError || !authData.user) throw authError ?? new Error('Signup failed');
+
+      // Document uploads need an authenticated session. When Supabase email
+      // confirmation is enabled, signUp() returns a user but NO session, and
+      // storage would reject the upload with an RLS error.
+      if (!authData.session) {
+        setFormError(
+          'Account created. This project requires email confirmation, so documents cannot be uploaded yet. Confirm your email, sign in, then submit the documents again. Recommended: turn off "Confirm email" in Supabase → Authentication → Providers → Email.'
+        );
+        return;
+      }
 
       const userId = authData.user.id;
 
@@ -138,7 +149,7 @@ export default function StudentRegisterScreen() {
       await supabase.auth.signOut();
       router.replace('/(auth)/pending' as any);
     } catch (err: any) {
-      setFormError(err.message ?? 'Registration failed. Please try again.');
+      setFormError(friendlyDbError(err));
     } finally {
       setIsLoading(false);
     }

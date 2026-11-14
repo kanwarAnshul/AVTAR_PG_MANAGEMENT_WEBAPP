@@ -102,15 +102,15 @@ avtar-pg-manager/
 2. Open the **SQL Editor** in the Supabase Dashboard.
 3. Run `supabase/migrations/001_initial_schema.sql`.
 4. Run `supabase/migrations/002_rls_policies.sql`.
-5. Run `supabase/SUPABASE_SETUP.sql` (this is migrations **003 + 004 + 005** combined).
-   - Supabase may show a **destructive-query warning**. It is caused by one line: `DROP POLICY "users_own_notifications" ON notifications;` — it removes an old security policy only. **No table, column, schema, row or data is deleted.** It is safe to confirm.
+5. Run `supabase/SUPABASE_SETUP.sql` (this is migrations **003 + 004 + 005 + 006** combined).
+   - Supabase may show a **destructive-query warning**. It is caused by a few `DROP POLICY` lines — they remove old security policies only. **No table, column, schema, row or data is deleted.** It is safe to confirm.
    - The script is re-runnable: tables/columns/indexes use `IF NOT EXISTS`, and policies are created only if missing.
-   - If you already ran the older 003+004 script, run **only** `supabase/migrations/005_warden_promotion.sql` (it adds the owner-only warden promotion RPC).
-6. Under **Storage**, create two **private** buckets:
-   - `tenant_docs`
-   - `complaint_photos`
+   - If you already ran the older 003+004 script, run **only** `supabase/migrations/005_warden_promotion.sql` and `supabase/migrations/006_storage_and_otp.sql`.
+6. **Storage is created automatically by migration 006** — private `tenant_docs` and `complaint_photos` buckets plus their RLS policies. No manual bucket step is needed. This is what fixes the `new row violates row level security policy` error on student/employee document upload.
 
-**Verify the setup** — run this in the SQL Editor and expect 5 tables + 4 functions:
+> **Email confirmation:** turn **off** *Authentication → Providers → Email → Confirm email*. With it on, `signUp()` returns no session, so document uploads and the registration insert are blocked until the user confirms their email (the app now shows a clear message instead of the raw RLS error).
+
+**Verify the setup** — run this in the SQL Editor and expect 5 tables + 11 functions:
 ```sql
 SELECT table_name FROM information_schema.tables
 WHERE table_schema = 'public'
@@ -119,8 +119,26 @@ WHERE table_schema = 'public'
 SELECT proname FROM pg_proc p
 JOIN pg_namespace n ON n.oid = p.pronamespace
 WHERE n.nspname = 'public'
-  AND p.proname IN ('owner_exists','claim_first_owner','promote_to_warden','am_i_owner');
+  AND p.proname IN (
+    'owner_exists','claim_first_owner','promote_to_warden','am_i_owner',
+    'request_password_otp','reset_password_with_otp','set_sms_provider',
+    'set_sms_dev_mode','get_sms_provider','send_sms_otp','encrypt_pan'
+  );
 ```
+
+### 1c. Forgot password (SMS OTP) — all roles
+Every role (student, employee, warden, Super Admin) can reset the password from **Sign In → Forgot password? Get an OTP**.
+
+- The OTP is a random 6-digit code generated in the database, valid for 10 minutes, with a 5-attempt limit and rate limiting.
+- It is sent to `profiles.phone`. Registration and Super Admin setup now save the phone number automatically. Existing users can add/update it in **Profile**.
+- **Demo mode is ON by default** (no SMS provider yet): the OTP is shown on the reset screen so the flow works immediately.
+- To send real SMS, open **Owner → Settings → SMS OTP**, pick `fast2sms` (recommended for India), paste the API key + sender ID, turn **Demo mode** off, and Save. Or run:
+  ```sql
+  SELECT public.set_sms_provider('fast2sms', 'YOUR_FAST2SMS_API_KEY', 'AVTPG');
+  SELECT public.set_sms_dev_mode(false);
+  ```
+- SMS delivery uses the `pg_net` extension (migration 006 enables it). Fast2SMS OTP/transactional messages require DLT registration for Indian numbers.
+- Supported providers: `fast2sms`, `msg91` (needs an OTP template ID), and `webhook` (posts `{to, message, otp, sender, api_key}` JSON to your own endpoint).
 
 ### 1b. Create the first Super Admin (owner)
 There is no public owner registration (that would let anyone become owner). The app uses one shared sign-in and detects the role from the database.

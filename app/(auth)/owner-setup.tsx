@@ -26,6 +26,7 @@ export default function OwnerSetupScreen() {
 
   const [screen, setScreen] = useState<ScreenState>('checking');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
@@ -115,6 +116,10 @@ export default function OwnerSetupScreen() {
       setError('Passwords do not match.');
       return;
     }
+    if (!/^[6-9]\d{9}$/.test(phone.trim())) {
+      setError('Enter a valid 10-digit mobile number. It is used for OTP password recovery.');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -133,7 +138,7 @@ export default function OwnerSetupScreen() {
       const signUp = await supabase.auth.signUp({
         email: cleanEmail,
         password,
-        options: { data: { role: 'tenant' } },
+        options: { data: { role: 'tenant', phone: phone.trim() } },
       });
 
       if (signUp.error) {
@@ -229,6 +234,16 @@ export default function OwnerSetupScreen() {
             autoCapitalize="none"
             value={email}
             onChangeText={setEmail}
+            required
+          />
+          <Input
+            label="Owner Mobile Number"
+            placeholder="10-digit mobile (for OTP recovery)"
+            keyboardType="phone-pad"
+            maxLength={10}
+            value={phone}
+            onChangeText={setPhone}
+            hint="Used only for password-reset OTP."
             required
           />
           <Input

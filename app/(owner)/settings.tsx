@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,13 +9,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Colors, Typography, Spacing } from '../../src/constants/theme';
+import { Colors, Typography, Spacing, BorderRadius } from '../../src/constants/theme';
 import { useThemeStore } from '../../src/stores/themeStore';
 import { useAuthStore } from '../../src/stores/authStore';
+import { supabase } from '../../src/lib/supabase';
+import { friendlyDbError } from '../../src/utils/helpers';
 import { Card } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
+import { Input } from '../../src/components/ui/Input';
+import { Button } from '../../src/components/ui/Button';
 import { ScreenHeader, ConfirmDialog } from '../../src/components/ui';
 import { ThemePicker } from '../../src/components/ThemePicker';
+
+const SMS_PROVIDERS = ['none', 'fast2sms', 'msg91', 'webhook'] as const;
+type SmsProvider = (typeof SMS_PROVIDERS)[number];
 
 export default function OwnerSettingsScreen() {
   const { isDark } = useThemeStore();
@@ -23,6 +30,70 @@ export default function OwnerSettingsScreen() {
   const { profile, signOut } = useAuthStore();
 
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+
+  const [smsProvider, setSmsProvider] = useState<SmsProvider>('none');
+  const [smsApiKey, setSmsApiKey] = useState('');
+  const [smsSenderId, setSmsSenderId] = useState('');
+  const [smsTemplateId, setSmsTemplateId] = useState('');
+  const [smsWebhookUrl, setSmsWebhookUrl] = useState('');
+  const [smsDevMode, setSmsDevMode] = useState(true);
+  const [hasSmsKey, setHasSmsKey] = useState(false);
+  const [savingSms, setSavingSms] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'sms_dev_mode')
+        .maybeSingle();
+      setSmsDevMode(data?.value !== 'false');
+
+      const { data: cfg } = await supabase.rpc('get_sms_provider');
+      if (cfg) {
+        const c = cfg as {
+          provider?: SmsProvider;
+          sender_id?: string | null;
+          template_id?: string | null;
+          webhook_url?: string | null;
+          has_api_key?: boolean;
+        };
+        setSmsProvider(c.provider ?? 'none');
+        setSmsSenderId(c.sender_id ?? '');
+        setSmsTemplateId(c.template_id ?? '');
+        setSmsWebhookUrl(c.webhook_url ?? '');
+        setHasSmsKey(Boolean(c.has_api_key));
+      }
+    })();
+  }, []);
+
+  const saveSmsSettings = async () => {
+    setSavingSms(true);
+    try {
+      const { error } = await supabase.rpc('set_sms_provider', {
+        p_provider: smsProvider,
+        // Blank = keep the previously saved key.
+        p_api_key: smsApiKey.trim() ? smsApiKey.trim() : null,
+        p_sender_id: smsSenderId.trim() || null,
+        p_template_id: smsTemplateId.trim() || null,
+        p_webhook_url: smsWebhookUrl.trim() || null,
+      });
+      if (error) throw error;
+
+      const { error: devError } = await supabase.rpc('set_sms_dev_mode', {
+        p_enabled: smsDevMode,
+      });
+      if (devError) throw devError;
+
+      if (smsApiKey.trim()) setHasSmsKey(true);
+      setSmsApiKey('');
+      Alert.alert('Saved', 'SMS / OTP settings updated.');
+    } catch (err) {
+      Alert.alert('Could not save', friendlyDbError(err));
+    } finally {
+      setSavingSms(false);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -102,6 +173,94 @@ export default function OwnerSettingsScreen() {
           ))}
         </Card>
 
+        {/* SMS OTP for password reset */}
+        <Card style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>📱 SMS OTP (PASSWORD RESET)</Text>
+          <Text style={[styles.smsHint, { color: theme.textSecondary }]}>
+            Used by “Forgot password” for students, employees, wardens and the Super Admin. Add a provider key to send
+            real SMS. With no key, demo mode shows the OTP on screen.
+          </Text>
+
+          <View style={styles.chipRow}>
+            {SMS_PROVIDERS.map((p) => (
+              <TouchableOpacity
+                key={p}
+                onPress={() => setSmsProvider(p)}
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor: smsProvider === p ? Colors.primary : theme.surfaceAlt,
+                    borderColor: smsProvider === p ? Colors.primary : theme.border,
+                  },
+                ]}
+              >
+                <Text style={[styles.chipText, { color: smsProvider === p ? '#FFFFFF' : theme.text }]}>
+                  {p}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {smsProvider !== 'none' ? (
+            <>
+              <Input
+                label="API Key / Auth Key"
+                placeholder={hasSmsKey ? 'Key saved — leave blank to keep' : 'Provider secret key'}
+                value={smsApiKey}
+                onChangeText={setSmsApiKey}
+                isPassword
+                hint={hasSmsKey ? 'A key is already stored. Type a new one to replace it.' : undefined}
+              />
+              {smsProvider === 'webhook' ? (
+                <Input
+                  label="Webhook URL"
+                  placeholder="https://your-service/send-sms"
+                  value={smsWebhookUrl}
+                  onChangeText={setSmsWebhookUrl}
+                  autoCapitalize="none"
+                />
+              ) : null}
+              <Input
+                label="Sender ID"
+                placeholder="e.g. AVTPG"
+                value={smsSenderId}
+                onChangeText={setSmsSenderId}
+                autoCapitalize="characters"
+              />
+              {smsProvider === 'msg91' ? (
+                <Input
+                  label="OTP Template ID"
+                  placeholder="MSG91 template id"
+                  value={smsTemplateId}
+                  onChangeText={setSmsTemplateId}
+                />
+              ) : null}
+            </>
+          ) : null}
+
+          <TouchableOpacity
+            style={[styles.prefRow, { borderBottomWidth: 0 }]}
+            onPress={() => setSmsDevMode((v) => !v)}
+          >
+            <View style={{ flex: 1, paddingRight: Spacing.sm }}>
+              <Text style={[styles.prefTitle, { color: theme.text }]}>Demo mode (show OTP on screen)</Text>
+              <Text style={[styles.prefSub, { color: theme.textSecondary }]}>
+                Turn this OFF once a real SMS provider is configured.
+              </Text>
+            </View>
+            <Text style={{ fontSize: 20, color: smsDevMode ? Colors.warning : theme.textMuted }}>
+              {smsDevMode ? '☑' : '☐'}
+            </Text>
+          </TouchableOpacity>
+
+          <Button
+            title="Save SMS Settings"
+            onPress={saveSmsSettings}
+            isLoading={savingSms}
+            style={{ marginTop: Spacing.sm }}
+          />
+        </Card>
+
         {/* App Preferences — global theme control for this user */}
         <Card style={styles.card}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>🎨 APP PREFERENCES (YOUR THEME)</Text>
@@ -160,6 +319,10 @@ const styles = StyleSheet.create({
   secRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Spacing.xs },
   secLabel: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.xs },
   prefRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Spacing.sm, borderBottomWidth: 1 },
+  smsHint: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs, lineHeight: 17, marginBottom: Spacing.sm },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginBottom: Spacing.sm },
+  chip: { paddingHorizontal: Spacing.md, paddingVertical: 6, borderRadius: BorderRadius.full, borderWidth: 1 },
+  chipText: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.xs },
   prefTitle: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.sm },
   prefSub: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs, marginTop: 2 },
 });

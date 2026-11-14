@@ -11,7 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase, uploadFile } from '../../../src/lib/supabase';
 import { Colors, Typography, Spacing, BorderRadius, MAX_IMAGE_SIZE_BYTES, IMAGE_COMPRESS_QUALITY } from '../../../src/constants/theme';
-import { PAN_REGEX } from '../../../src/utils/helpers';
+import { PAN_REGEX, friendlyDbError } from '../../../src/utils/helpers';
 import { useThemeStore } from '../../../src/stores/themeStore';
 import { Button } from '../../../src/components/ui/Button';
 import { Input } from '../../../src/components/ui/Input';
@@ -90,17 +90,31 @@ export default function EmployeeRegisterScreen() {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email.toLowerCase().trim(),
         password: data.password,
-        options: { data: { role: 'tenant', full_name: data.full_name } },
+        options: { data: { role: 'tenant', full_name: data.full_name, phone: data.phone } },
       });
       if (authError || !authData.user) throw authError ?? new Error('Signup failed');
+
+      // Document uploads need an authenticated session. When Supabase email
+      // confirmation is enabled, signUp() returns a user but NO session, and
+      // storage would reject the upload with an RLS error.
+      if (!authData.session) {
+        setFormError(
+          'Account created. This project requires email confirmation, so documents cannot be uploaded yet. Confirm your email, sign in, then submit the documents again. Recommended: turn off "Confirm email" in Supabase → Authentication → Providers → Email.'
+        );
+        return;
+      }
+
       const uid = authData.user.id;
 
       await uploadFile('tenant_docs', `${uid}/photo.jpg`, photo as any);
       await uploadFile('tenant_docs', `${uid}/aadhaar_front.jpg`, aadhaarFront as any);
       await uploadFile('tenant_docs', `${uid}/aadhaar_back.jpg`, aadhaarBack as any);
 
-      // Encrypt PAN via RPC (pgcrypto)
-      const { data: encPAN } = await supabase.rpc('encrypt_pan', { pan_text: data.pan_number.toUpperCase() });
+      // Encrypt PAN via RPC (pgcrypto). Never store PAN in plain text.
+      const { data: encPAN, error: panError } = await supabase.rpc('encrypt_pan', {
+        pan_text: data.pan_number.toUpperCase(),
+      });
+      if (panError) throw panError;
 
       const { error: regError } = await supabase.from('tenant_registrations').insert({
         user_id: uid,
@@ -118,7 +132,7 @@ export default function EmployeeRegisterScreen() {
         photo_url: `${uid}/photo.jpg`,
         aadhaar_front_url: `${uid}/aadhaar_front.jpg`,
         aadhaar_back_url: `${uid}/aadhaar_back.jpg`,
-        pan_encrypted: encPAN ?? data.pan_number, // fallback if RPC not set
+        pan_encrypted: encPAN,
         status: 'pending',
       });
       if (regError) throw regError;
@@ -126,7 +140,7 @@ export default function EmployeeRegisterScreen() {
       await supabase.auth.signOut();
       router.replace('/(auth)/pending' as any);
     } catch (err: any) {
-      setFormError(err.message ?? 'Registration failed. Try again.');
+      setFormError(friendlyDbError(err));
     } finally {
       setIsLoading(false);
     }

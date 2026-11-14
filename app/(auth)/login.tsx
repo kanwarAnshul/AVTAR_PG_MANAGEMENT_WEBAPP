@@ -148,6 +148,15 @@ export default function LoginScreen() {
               )}
             />
 
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/forgot-password')}
+              style={styles.forgotLink}
+            >
+              <Text style={[styles.forgotText, { color: Colors.primary }]}>
+                Forgot password? Get an OTP
+              </Text>
+            </TouchableOpacity>
+
             {loginError ? (
               <View style={[styles.errorBox, { backgroundColor: Colors.error + '15', borderColor: Colors.error + '40' }]}>
                 <Text style={[styles.errorText, { color: Colors.error }]}>⚠️ {loginError}</Text>
@@ -223,6 +232,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   form: { marginBottom: Spacing.xl },
+  forgotLink: { alignSelf: 'flex-end', paddingVertical: Spacing.sm, marginBottom: Spacing.xs },
+  forgotText: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.sm,
+  },
   errorBox: {
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,

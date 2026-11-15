@@ -135,8 +135,11 @@ export const friendlyDbError = (err: unknown): string => {
   if (lower.includes('not-null') || lower.includes('23502') || lower.includes('null value')) {
     return 'Some required information is missing. Please fill all required fields and try again.';
   }
+  if (lower.includes('pgrst202') || lower.includes('could not find the function') || lower.includes('function') && lower.includes('does not exist')) {
+    return 'Database function is missing. Please run the latest Supabase migration (006_storage_and_otp.sql) and try again.';
+  }
   if (lower.includes('does not exist') || lower.includes('could not find') || lower.includes('42p01') || lower.includes('42703')) {
-    return 'Database table/column is not set up yet. Please apply the latest Supabase migration (003_updates) and try again.';
+    return 'Database table/column is not set up yet. Please apply the latest Supabase migration (006_storage_and_otp.sql) and try again.';
   }
   if (lower.includes('invalid') && lower.includes('jwt')) {
     return 'Your session has expired. Please sign in again.';

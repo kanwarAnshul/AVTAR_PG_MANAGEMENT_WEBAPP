@@ -26,6 +26,25 @@ $ErrorActionPreference = 'Stop'
 $root = (Split-Path -Parent $PSScriptRoot).TrimEnd('\')
 Set-Location $root
 
+# Native tools such as `java -version` write their output to stderr. With
+# $ErrorActionPreference = 'Stop' that stderr stream is turned into a
+# terminating NativeCommandError, which aborted the build before it started.
+# Run such probes with the preference relaxed and collect stdout + stderr.
+function Invoke-NativeText {
+  param([string]$Exe, [string[]]$Arguments = @())
+
+  $previous = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    $output = & $Exe @Arguments 2>&1
+  }
+  finally {
+    $ErrorActionPreference = $previous
+  }
+
+  return (($output | ForEach-Object { "$_" }) -join "`n")
+}
+
 function Find-Jdk17 {
   $candidates = @()
   if ($env:JAVA_HOME) { $candidates += $env:JAVA_HOME }
@@ -44,7 +63,7 @@ function Find-Jdk17 {
     foreach ($dir in $dirs) {
       $java = Join-Path $dir.FullName 'bin\java.exe'
       if (-not (Test-Path $java)) { continue }
-      $versionLine = (& $java -version 2>&1 | Select-Object -First 1) -join ''
+      $versionLine = Invoke-NativeText -Exe $java -Arguments @('-version')
       if ($versionLine -match '"17\.') { return $dir.FullName }
     }
   }
@@ -75,7 +94,7 @@ function Ensure-LongPathNinja {
 
   $needed = $false
   foreach ($dir in $ninjaDirs) {
-    $versionText = (& (Join-Path $dir 'ninja.exe') --version 2>&1) -join ''
+    $versionText = Invoke-NativeText -Exe (Join-Path $dir 'ninja.exe') -Arguments @('--version')
     $version = $null
     if (-not [version]::TryParse($versionText.Trim(), [ref]$version)) { $version = [version]'0.0.0' }
     if ($version -lt [version]'1.12.0') { $needed = $true }
@@ -113,14 +132,14 @@ function Ensure-LongPathNinja {
 
   foreach ($dir in $ninjaDirs) {
     $target = Join-Path $dir 'ninja.exe'
-    $versionText = (& $target --version 2>&1) -join ''
+    $versionText = Invoke-NativeText -Exe $target -Arguments @('--version')
     $version = $null
     if ([version]::TryParse($versionText.Trim(), [ref]$version) -and $version -ge [version]'1.12.0') { continue }
 
     $backup = Join-Path $dir "ninja-$($versionText.Trim()).bak.exe"
     if (-not (Test-Path $backup)) { Copy-Item $target $backup -Force }
     Copy-Item $cachedNinja $target -Force
-    Write-Host "Upgraded ninja in $dir ($versionText -> $(& $target --version))"
+    Write-Host "Upgraded ninja in $dir ($versionText -> $(Invoke-NativeText -Exe $target -Arguments @('--version')))"
   }
 }
 

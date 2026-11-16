@@ -10,8 +10,9 @@ import {
   Alert,
 } from 'react-native';
 import { router } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { requestPasswordOtp, resetPasswordWithOtp } from '../../src/lib/supabase';
+import { requestPasswordOtp, resetPasswordWithOtp, sendPasswordResetEmail } from '../../src/lib/supabase';
 import { friendlyDbError } from '../../src/utils/helpers';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/constants/theme';
 import { useThemeStore } from '../../src/stores/themeStore';
@@ -39,6 +40,8 @@ export default function ForgotPasswordScreen() {
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -81,6 +84,32 @@ export default function ForgotPasswordScreen() {
       setError(friendlyDbError(err));
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Email channel — no SMS vendor needed. Supabase sends a recovery
+  // link that opens the app through the avtarpg:// scheme.
+  const sendEmailLink = async () => {
+    const value = cleanIdentifier(identifier);
+    if (!value || !value.includes('@')) {
+      setError('Enter the email address on your account to get a reset link.');
+      return;
+    }
+
+    setEmailSending(true);
+    setError('');
+    setInfo('');
+    try {
+      const result = await sendPasswordResetEmail(value, Linking.createURL('/reset-password'));
+      if (!result.ok) {
+        setError(result.error ?? 'Could not send the email. Please try again.');
+        return;
+      }
+      setEmailSent(true);
+    } catch (err) {
+      setError(friendlyDbError(err));
+    } finally {
+      setEmailSending(false);
     }
   };
 
@@ -164,6 +193,32 @@ export default function ForgotPasswordScreen() {
                 isLoading={loading}
                 style={{ marginTop: Spacing.base }}
               />
+
+              {/* Email fallback — works without any SMS provider */}
+              <View
+                style={[
+                  styles.altBox,
+                  { backgroundColor: theme.surfaceAlt, borderColor: theme.border },
+                ]}
+              >
+                <Text style={[styles.altTitle, { color: theme.text }]}>
+                  {emailSent ? '✅ Reset link sent' : 'No mobile number? Use email'}
+                </Text>
+                <Text style={[styles.altText, { color: theme.textSecondary }]}>
+                  {emailSent
+                    ? 'Open the link we emailed you on this device. It opens the app and lets you set a new password.'
+                    : 'We can email you a reset link instead. It opens the app where you choose a new password.'}
+                </Text>
+                {!emailSent ? (
+                  <Button
+                    title="Send reset link by email"
+                    onPress={sendEmailLink}
+                    isLoading={emailSending}
+                    variant="outline"
+                    style={{ marginTop: Spacing.sm }}
+                  />
+                ) : null}
+              </View>
 
               <TouchableOpacity
                 onPress={() => router.replace('/(auth)/login')}
@@ -347,6 +402,22 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
+  },
+  altBox: {
+    marginTop: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+  },
+  altTitle: {
+    fontFamily: Typography.fontFamily.semiBold,
+    fontSize: Typography.size.sm,
+    marginBottom: Spacing.xs,
+  },
+  altText: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
+    lineHeight: 17,
   },
   noteText: {
     fontFamily: Typography.fontFamily.regular,

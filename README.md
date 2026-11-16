@@ -102,11 +102,12 @@ avtar-pg-manager/
 2. Open the **SQL Editor** in the Supabase Dashboard.
 3. Run `supabase/migrations/001_initial_schema.sql`.
 4. Run `supabase/migrations/002_rls_policies.sql`.
-5. Run `supabase/SUPABASE_SETUP.sql` (this is migrations **003 + 004 + 005 + 006** combined).
+5. Run `supabase/SUPABASE_SETUP.sql` (this is migrations **003 + 004 + 005 + 006 + 007** combined).
    - Supabase may show a **destructive-query warning**. It is caused by a few `DROP POLICY` lines — they remove old security policies only. **No table, column, schema, row or data is deleted.** It is safe to confirm.
    - The script is re-runnable: tables/columns/indexes use `IF NOT EXISTS`, and policies are created only if missing.
-   - If you already ran the older 003+004 script, run **only** `supabase/migrations/005_warden_promotion.sql` and `supabase/migrations/006_storage_and_otp.sql`.
+   - If you already ran the older 003+004 script, run **only** `supabase/migrations/005_warden_promotion.sql`, `006_storage_and_otp.sql` and `007_sms_hardening.sql`.
 6. **Storage is created automatically by migration 006** — private `tenant_docs` and `complaint_photos` buckets plus their RLS policies. No manual bucket step is needed. This is what fixes the `new row violates row level security policy` error on student/employee document upload.
+7. **Migration 007 enables `pg_net`** (outbound HTTPS from Postgres) and adds the SMS health check (`sms_status()`) and the one-tap test message (`sms_send_test()`).
 
 > **Email confirmation:** turn **off** *Authentication → Providers → Email → Confirm email*. With it on, `signUp()` returns no session, so document uploads and the registration insert are blocked until the user confirms their email (the app now shows a clear message instead of the raw RLS error).
 
@@ -122,7 +123,8 @@ WHERE n.nspname = 'public'
   AND p.proname IN (
     'owner_exists','claim_first_owner','promote_to_warden','am_i_owner',
     'request_password_otp','reset_password_with_otp','set_sms_provider',
-    'set_sms_dev_mode','get_sms_provider','send_sms_otp','encrypt_pan'
+    'set_sms_dev_mode','get_sms_provider','send_sms_otp','encrypt_pan',
+    'sms_status','sms_send_test','sms_response_error'
   );
 ```
 
@@ -137,8 +139,11 @@ Every role (student, employee, warden, Super Admin) can reset the password from 
   SELECT public.set_sms_provider('fast2sms', 'YOUR_FAST2SMS_API_KEY', 'AVTPG');
   SELECT public.set_sms_dev_mode(false);
   ```
-- SMS delivery uses the `pg_net` extension (migration 006 enables it). Fast2SMS OTP/transactional messages require DLT registration for Indian numbers.
+- SMS delivery uses the `pg_net` extension (migration 007 enables it). Fast2SMS OTP/transactional messages require DLT registration for Indian numbers.
 - Supported providers: `fast2sms`, `msg91` (needs an OTP template ID), and `webhook` (posts `{to, message, otp, sender, api_key}` JSON to your own endpoint).
+- **Migration 007 makes the transport verifiable.** `send_sms_otp()` now waits for the provider's real HTTP reply instead of assuming success, `sms_status()` shows the gateway health, and `sms_send_test(phone)` sends a test message and returns the provider's raw response. Use **Owner → Settings → SMS OTP → Send Test SMS** to confirm the key works.
+- **Email fallback (no SMS vendor needed):** the same screen offers *"Send reset link by email"*, which uses Supabase's built-in mailer. Configure SMTP in **Project Settings → Email** and add `avtarpg://reset-password` to **Authentication → URL Configuration → Redirect URLs**.
+- Full step-by-step, provider comparison and troubleshooting: **`docs/SMS_PROVIDER_SETUP.md`**.
 
 ### 1b. Create the first Super Admin (owner)
 There is no public owner registration (that would let anyone become owner). The app uses one shared sign-in and detects the role from the database.

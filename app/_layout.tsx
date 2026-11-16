@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text } from 'react-native';
+import { Linking } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import {
@@ -18,6 +19,7 @@ import { useThemeStore } from '../src/stores/themeStore';
 import { Colors } from '../src/constants/theme';
 import { OfflineBanner } from '../src/components/OfflineBanner';
 import { sendDueReminders } from '../src/services/messaging';
+import { supabase } from '../src/lib/supabase';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,6 +71,43 @@ export default function RootLayout() {
     }
   }, [user?.id]);
 
+  useEffect(() => {
+    // Password-reset deep link (avtarpg://reset-password#access_token=...).
+    // The recovery email opens the app; we exchange the tokens for a
+    // session and route to the "set a new password" screen.
+    const handleUrl = async (url: string) => {
+      if (!url || !url.startsWith('avtarpg://reset-password')) return;
+
+      const hashIndex = url.indexOf('#');
+      const params = new URLSearchParams(hashIndex >= 0 ? url.slice(hashIndex + 1) : '');
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+
+      if (!accessToken || !refreshToken) return;
+
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (sessionError) return;
+
+      router.replace('/reset-password');
+    };
+
+    // The app may have been launched straight from the link.
+    Linking.getInitialURL()
+      .then((url) => {
+        if (url) handleUrl(url);
+      })
+      .catch(() => {});
+
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      handleUrl(url);
+    });
+
+    return () => subscription.remove();
+  }, []);
+
   // Continue if fonts are loaded, or if font error occurred, or after 2s safety timeout
   if (!fontsLoaded && !fontError && !timedOut) {
     return (
@@ -92,6 +131,7 @@ export default function RootLayout() {
             <Stack.Screen name="(tenant)" />
             <Stack.Screen name="(warden)" />
             <Stack.Screen name="(owner)" />
+            <Stack.Screen name="reset-password" />
           </Stack>
         </QueryClientProvider>
       </SafeAreaProvider>

@@ -12,7 +12,7 @@ import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/constants/theme';
 import { useThemeStore } from '../../src/stores/themeStore';
 import { useAuthStore } from '../../src/stores/authStore';
-import { supabase } from '../../src/lib/supabase';
+import { supabase, getSmsStatus, sendTestSms } from '../../src/lib/supabase';
 import { friendlyDbError } from '../../src/utils/helpers';
 import { Card } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
@@ -39,6 +39,30 @@ export default function OwnerSettingsScreen() {
   const [smsDevMode, setSmsDevMode] = useState(true);
   const [hasSmsKey, setHasSmsKey] = useState(false);
   const [savingSms, setSavingSms] = useState(false);
+  const [smsHealth, setSmsHealth] = useState<{
+    ready: boolean;
+    dev_mode: boolean;
+    pg_net_enabled: boolean;
+    problem?: string | null;
+  } | null>(null);
+  const [testPhone, setTestPhone] = useState('');
+  const [testingSms, setTestingSms] = useState(false);
+
+  // Live health check for the SMS gateway (owner only).
+  const refreshSmsHealth = async () => {
+    try {
+      const s = await getSmsStatus();
+      setSmsHealth({
+        ready: s.ready,
+        dev_mode: s.dev_mode,
+        pg_net_enabled: s.pg_net_enabled,
+        problem: s.problem ?? null,
+      });
+    } catch {
+      // Migration 007 not applied yet — the card simply stays hidden.
+      setSmsHealth(null);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -64,8 +88,42 @@ export default function OwnerSettingsScreen() {
         setSmsWebhookUrl(c.webhook_url ?? '');
         setHasSmsKey(Boolean(c.has_api_key));
       }
+
+      await refreshSmsHealth();
     })();
   }, []);
+
+  const runSmsTest = async () => {
+    const digits = testPhone.replace(/\D/g, '').slice(-10);
+    if (digits.length !== 10) {
+      Alert.alert('Invalid number', 'Enter a 10-digit Indian mobile number to send the test message to.');
+      return;
+    }
+
+    setTestingSms(true);
+    try {
+      const result = await sendTestSms(digits);
+      await refreshSmsHealth();
+
+      if (result.ok) {
+        Alert.alert(
+          'Test message sent',
+          `The provider accepted the message for +91${digits}. It should arrive within a few seconds.`
+        );
+      } else {
+        Alert.alert(
+          'Test message failed',
+          `The provider rejected it.\n\nReason: ${result.error ?? 'Unknown error'}\n\nHTTP status: ${
+            result.http_status ?? 'n/a'
+          }\n\nThis usually means the API key, sender ID or DLT template is wrong.`
+        );
+      }
+    } catch (err) {
+      Alert.alert('Could not send test', friendlyDbError(err));
+    } finally {
+      setTestingSms(false);
+    }
+  };
 
   const saveSmsSettings = async () => {
     setSavingSms(true);
@@ -87,6 +145,7 @@ export default function OwnerSettingsScreen() {
 
       if (smsApiKey.trim()) setHasSmsKey(true);
       setSmsApiKey('');
+      await refreshSmsHealth();
       Alert.alert('Saved', 'SMS / OTP settings updated.');
     } catch (err) {
       Alert.alert('Could not save', friendlyDbError(err));
@@ -259,6 +318,50 @@ export default function OwnerSettingsScreen() {
             isLoading={savingSms}
             style={{ marginTop: Spacing.sm }}
           />
+
+          {/* Live health check — proves the gateway really works */}
+          {smsHealth ? (
+            <View
+              style={[
+                styles.healthBox,
+                {
+                  backgroundColor: smsHealth.ready ? Colors.success + '15' : Colors.warning + '15',
+                  borderColor: smsHealth.ready ? Colors.success + '45' : Colors.warning + '45',
+                },
+              ]}
+            >
+              <Text style={[styles.healthTitle, { color: theme.text }]}>
+                {smsHealth.ready ? '✅ Gateway configured' : '⚠️ Gateway not ready'}
+              </Text>
+              <Text style={[styles.healthText, { color: theme.textSecondary }]}>
+                {smsHealth.ready
+                  ? 'Provider, API key and sender details are set. Send a test message to be certain the SMS is delivered.'
+                  : smsHealth.problem ?? 'Check the provider settings above.'}
+              </Text>
+              <Text style={[styles.healthText, { color: theme.textSecondary }]}>
+                • pg_net (outbound HTTP): {smsHealth.pg_net_enabled ? 'enabled' : 'not enabled'}
+              </Text>
+              <Text style={[styles.healthText, { color: theme.textSecondary }]}>
+                • Demo mode: {smsHealth.dev_mode ? 'ON (OTP shown on screen)' : 'OFF (real SMS only)'}
+              </Text>
+
+              <Input
+                label="Send a test SMS to"
+                placeholder="9876543210"
+                keyboardType="number-pad"
+                maxLength={10}
+                value={testPhone}
+                onChangeText={(t) => setTestPhone(t.replace(/\D/g, ''))}
+                style={{ marginTop: Spacing.sm }}
+              />
+              <Button
+                title="Send Test SMS"
+                onPress={runSmsTest}
+                isLoading={testingSms}
+                style={{ marginTop: Spacing.xs }}
+              />
+            </View>
+          ) : null}
         </Card>
 
         {/* App Preferences — global theme control for this user */}
@@ -322,6 +425,9 @@ const styles = StyleSheet.create({
   smsHint: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs, lineHeight: 17, marginBottom: Spacing.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginBottom: Spacing.sm },
   chip: { paddingHorizontal: Spacing.md, paddingVertical: 6, borderRadius: BorderRadius.full, borderWidth: 1 },
+  healthBox: { marginTop: Spacing.md, padding: Spacing.md, borderRadius: BorderRadius.lg, borderWidth: 1 },
+  healthTitle: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.sm, marginBottom: Spacing.xs },
+  healthText: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs, lineHeight: 17 },
   chipText: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.xs },
   prefTitle: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.sm },
   prefSub: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs, marginTop: 2 },

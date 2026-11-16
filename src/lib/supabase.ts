@@ -148,6 +148,58 @@ export const resetPasswordWithOtp = async (
   return data as OtpResetResult;
 };
 
+// ── SMS provider health + test (owner only) ───────────────────
+export interface SmsStatus {
+  provider: string;
+  has_api_key: boolean;
+  sender_id?: string | null;
+  template_id?: string | null;
+  webhook_url?: string | null;
+  dev_mode: boolean;
+  pg_net_enabled: boolean;
+  ready: boolean;
+  problem?: string | null;
+}
+
+export interface SmsTestResult {
+  ok: boolean;
+  provider?: string;
+  to?: string;
+  http_status?: number;
+  response?: string;
+  error?: string | null;
+}
+
+// Owner-only: shows whether the SMS gateway is correctly configured.
+export const getSmsStatus = async (): Promise<SmsStatus> => {
+  assertConfigured();
+  const { data, error } = await supabase.rpc('sms_status');
+  if (error) throw error;
+  return data as SmsStatus;
+};
+
+// Owner-only: sends a real test message and returns the provider's answer.
+export const sendTestSms = async (phone: string): Promise<SmsTestResult> => {
+  assertConfigured();
+  const { data, error } = await supabase.rpc('sms_send_test', { p_phone: phone });
+  if (error) throw error;
+  return data as SmsTestResult;
+};
+
+// ── Password reset by email (no SMS provider needed) ──────────
+// Uses Supabase's built-in mailer: it sends a recovery link that opens
+// the app through the avtarpg:// scheme. Needs SMTP configured on the
+// Supabase project, but no DLT / SMS vendor account.
+export const sendPasswordResetEmail = async (
+  email: string,
+  redirectTo: string
+): Promise<{ ok: boolean; error?: string }> => {
+  assertConfigured();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+};
+
 // PAN encryption helper (uses pgcrypto via RPC — only owner can decrypt)
 export const encryptPAN = async (pan: string): Promise<string> => {
   assertConfigured();

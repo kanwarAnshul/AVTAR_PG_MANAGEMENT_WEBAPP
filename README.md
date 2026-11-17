@@ -102,12 +102,13 @@ avtar-pg-manager/
 2. Open the **SQL Editor** in the Supabase Dashboard.
 3. Run `supabase/migrations/001_initial_schema.sql`.
 4. Run `supabase/migrations/002_rls_policies.sql`.
-5. Run `supabase/SUPABASE_SETUP.sql` (this is migrations **003 + 004 + 005 + 006 + 007** combined).
+5. Run `supabase/SUPABASE_SETUP.sql` (this is migrations **003 + 004 + 005 + 006 + 007 + 008** combined).
    - Supabase may show a **destructive-query warning**. It is caused by a few `DROP POLICY` lines — they remove old security policies only. **No table, column, schema, row or data is deleted.** It is safe to confirm.
    - The script is re-runnable: tables/columns/indexes use `IF NOT EXISTS`, and policies are created only if missing.
-   - If you already ran the older 003+004 script, run **only** `supabase/migrations/005_warden_promotion.sql`, `006_storage_and_otp.sql` and `007_sms_hardening.sql`.
+   - If you already ran the older 003+004 script, run **only** `supabase/migrations/005_warden_promotion.sql` through `008_identifier_lookup_fix.sql` (in order).
 6. **Storage is created automatically by migration 006** — private `tenant_docs` and `complaint_photos` buckets plus their RLS policies. No manual bucket step is needed. This is what fixes the `new row violates row level security policy` error on student/employee document upload.
 7. **Migration 007 enables `pg_net`** (outbound HTTPS from Postgres) and adds the SMS health check (`sms_status()`) and the one-tap test message (`sms_send_test()`).
+8. **Migration 008 fixes "No account was found" on Forgot password.** Accounts created before 006 never had their mobile number copied into `profiles` — the original trigger had no phone column, so the number typed at signup was kept only in `auth.users` metadata. 008 backfills it and teaches the lookup to search the signup metadata and `tenant_registrations` as well.
 
 > **Email confirmation:** turn **off** *Authentication → Providers → Email → Confirm email*. With it on, `signUp()` returns no session, so document uploads and the registration insert are blocked until the user confirms their email (the app now shows a clear message instead of the raw RLS error).
 
@@ -144,6 +145,13 @@ Every role (student, employee, warden, Super Admin) can reset the password from 
 - **Migration 007 makes the transport verifiable.** `send_sms_otp()` now waits for the provider's real HTTP reply instead of assuming success, `sms_status()` shows the gateway health, and `sms_send_test(phone)` sends a test message and returns the provider's raw response. Use **Owner → Settings → SMS OTP → Send Test SMS** to confirm the key works.
 - **Email fallback (no SMS vendor needed):** the same screen offers *"Send reset link by email"*, which uses Supabase's built-in mailer. Configure SMTP in **Project Settings → Email** and add `avtarpg://reset-password` to **Authentication → URL Configuration → Redirect URLs**.
 - Full step-by-step, provider comparison and troubleshooting: **`docs/SMS_PROVIDER_SETUP.md`**.
+- **"No account was found for that mobile number"?** Run migration `008_identifier_lookup_fix.sql`. Accounts created before 006 never had their phone copied into `profiles` (the original signup trigger had no phone column). 008 backfills it from the signup metadata and searches it too. To see where your number is stored:
+  ```sql
+  SELECT p.email, p.phone AS profiles_phone,
+         a.raw_user_meta_data->>'phone' AS signup_meta_phone
+    FROM public.profiles p JOIN auth.users a ON a.id = p.id
+   WHERE lower(p.email) = 'YOUR_EMAIL_HERE';
+  ```
 
 ### 1b. Create the first Super Admin (owner)
 There is no public owner registration (that would let anyone become owner). The app uses one shared sign-in and detects the role from the database.

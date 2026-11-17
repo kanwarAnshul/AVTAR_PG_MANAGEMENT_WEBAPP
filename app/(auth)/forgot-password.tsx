@@ -70,7 +70,16 @@ export default function ForgotPasswordScreen() {
     try {
       const result = await requestPasswordOtp(value);
       if (!result.ok) {
-        setError(result.error ?? 'Could not send the OTP. Please try again.');
+        // A number that is not on any account is the most common case
+        // (accounts created before migration 006 never stored the phone).
+        // Point the user at the two things that actually fix it.
+        const isPhone = !value.includes('@');
+        const base = result.error ?? 'Could not send the OTP. Please try again.';
+        setError(
+          isPhone && base.includes('No account was found')
+            ? `${base} Try your email address instead, or open Profile and check the mobile number saved on your account.`
+            : base
+        );
         return;
       }
 

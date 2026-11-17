@@ -154,7 +154,7 @@ export default function TenantComplaintsScreen() {
 
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         {complaints.length === 0 ? (
           <EmptyState
@@ -186,8 +186,8 @@ export default function TenantComplaintsScreen() {
               ) : null}
 
               {c.resolution_note ? (
-                <View style={[styles.resolutionBox, { backgroundColor: isDark ? '#1E293B' : '#F1F5F9', borderColor: theme.border }]}>
-                  <Text style={[styles.resolutionTitle, { color: Colors.success }]}>✓ Resolution Note:</Text>
+                <View style={[styles.resolutionBox, { backgroundColor: isDark ? '#1E2417' : '#EFF1E6', borderColor: theme.border }]}>
+                  <Text style={[styles.resolutionTitle, { color: theme.success }]}>✓ Resolution Note:</Text>
                   <Text style={[styles.resolutionText, { color: theme.textSecondary }]}>{c.resolution_note}</Text>
                 </View>
               ) : null}

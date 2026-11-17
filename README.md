@@ -102,13 +102,14 @@ avtar-pg-manager/
 2. Open the **SQL Editor** in the Supabase Dashboard.
 3. Run `supabase/migrations/001_initial_schema.sql`.
 4. Run `supabase/migrations/002_rls_policies.sql`.
-5. Run `supabase/SUPABASE_SETUP.sql` (this is migrations **003 + 004 + 005 + 006 + 007 + 008** combined).
+5. Run `supabase/SUPABASE_SETUP.sql` (this is migrations **003 + 004 + 005 + 006 + 007 + 008 + 009** combined).
    - Supabase may show a **destructive-query warning**. It is caused by a few `DROP POLICY` lines — they remove old security policies only. **No table, column, schema, row or data is deleted.** It is safe to confirm.
    - The script is re-runnable: tables/columns/indexes use `IF NOT EXISTS`, and policies are created only if missing.
-   - If you already ran the older 003+004 script, run **only** `supabase/migrations/005_warden_promotion.sql` through `008_identifier_lookup_fix.sql` (in order).
+   - If you already ran the older 003+004 script, run **only** `supabase/migrations/005_warden_promotion.sql` through `009_pan_decrypt_and_realtime.sql` (in order).
 6. **Storage is created automatically by migration 006** — private `tenant_docs` and `complaint_photos` buckets plus their RLS policies. No manual bucket step is needed. This is what fixes the `new row violates row level security policy` error on student/employee document upload.
 7. **Migration 007 enables `pg_net`** (outbound HTTPS from Postgres) and adds the SMS health check (`sms_status()`) and the one-tap test message (`sms_send_test()`).
 8. **Migration 008 fixes "No account was found" on Forgot password.** Accounts created before 006 never had their mobile number copied into `profiles` — the original trigger had no phone column, so the number typed at signup was kept only in `auth.users` metadata. 008 backfills it and teaches the lookup to search the signup metadata and `tenant_registrations` as well.
+9. **Migration 009 enables live updates and PAN decryption.** It adds the missing `decrypt_pan()` (owner-only) so Approvals can show a real PAN instead of an encrypted blob, and it puts `notices`, `notifications`, `profiles`, `tenant_requests`, `emergency_alerts`, `complaints` and `daily_presence` into the `supabase_realtime` publication — without it `postgres_changes` subscriptions join successfully but never deliver an event, so the notification badge and notice board only refresh on pull-to-refresh.
 
 > **Email confirmation:** turn **off** *Authentication → Providers → Email → Confirm email*. With it on, `signUp()` returns no session, so document uploads and the registration insert are blocked until the user confirms their email (the app now shows a clear message instead of the raw RLS error).
 
@@ -125,8 +126,12 @@ WHERE n.nspname = 'public'
     'owner_exists','claim_first_owner','promote_to_warden','am_i_owner',
     'request_password_otp','reset_password_with_otp','set_sms_provider',
     'set_sms_dev_mode','get_sms_provider','send_sms_otp','encrypt_pan',
-    'sms_status','sms_send_test','sms_response_error'
+    'decrypt_pan','sms_status','sms_send_test','sms_response_error'
   );
+
+-- Realtime publication (expect 7 rows):
+SELECT schemaname, tablename FROM pg_publication_tables
+WHERE pubname = 'supabase_realtime' ORDER BY tablename;
 ```
 
 ### 1c. Forgot password (SMS OTP) — all roles

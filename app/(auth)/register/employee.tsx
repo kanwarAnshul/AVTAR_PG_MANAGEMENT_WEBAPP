@@ -231,13 +231,13 @@ export default function EmployeeRegisterScreen() {
             <Card>
               <Text style={[styles.sectionTitle, { color: theme.text }]}>KYC Documents</Text>
               <View style={[styles.securityNote, { backgroundColor: Colors.info + '15', borderColor: Colors.info + '30' }]}>
-                <Text style={[styles.securityText, { color: Colors.info }]}>
+                <Text style={[styles.securityText, { color: theme.info }]}>
                   🔒 All KYC documents are stored in a private bucket. Aadhaar & PAN are only accessible to authorized staff. PAN is AES-256 encrypted.
                 </Text>
               </View>
 
               {/* Passport Photo */}
-              <Text style={[styles.docLabel, { color: theme.text }]}>Passport Photo <Text style={{ color: Colors.error }}>*</Text></Text>
+              <Text style={[styles.docLabel, { color: theme.text }]}>Passport Photo <Text style={{ color: theme.error }}>*</Text></Text>
               <TouchableOpacity onPress={() => pickImage('photo')} style={[styles.docPicker, { borderColor: photo.uri ? Colors.success : theme.border, backgroundColor: theme.surfaceAlt }]}>
                 {photo.uri ? <Image source={{ uri: photo.uri }} style={styles.photoPreview} /> : (
                   <View style={styles.pickerContent}>
@@ -248,7 +248,7 @@ export default function EmployeeRegisterScreen() {
               </TouchableOpacity>
 
               {/* Aadhaar Front */}
-              <Text style={[styles.docLabel, { color: theme.text }]}>Aadhaar Front <Text style={{ color: Colors.error }}>*</Text></Text>
+              <Text style={[styles.docLabel, { color: theme.text }]}>Aadhaar Front <Text style={{ color: theme.error }}>*</Text></Text>
               <TouchableOpacity onPress={() => pickImage('aadhaarFront')} style={[styles.docPicker, { borderColor: aadhaarFront.uri ? Colors.success : theme.border, backgroundColor: theme.surfaceAlt }]}>
                 {aadhaarFront.uri ? <Image source={{ uri: aadhaarFront.uri }} style={styles.docPreview} /> : (
                   <View style={styles.pickerContent}>
@@ -259,7 +259,7 @@ export default function EmployeeRegisterScreen() {
               </TouchableOpacity>
 
               {/* Aadhaar Back */}
-              <Text style={[styles.docLabel, { color: theme.text }]}>Aadhaar Back <Text style={{ color: Colors.error }}>*</Text></Text>
+              <Text style={[styles.docLabel, { color: theme.text }]}>Aadhaar Back <Text style={{ color: theme.error }}>*</Text></Text>
               <TouchableOpacity onPress={() => pickImage('aadhaarBack')} style={[styles.docPicker, { borderColor: aadhaarBack.uri ? Colors.success : theme.border, backgroundColor: theme.surfaceAlt }]}>
                 {aadhaarBack.uri ? <Image source={{ uri: aadhaarBack.uri }} style={styles.docPreview} /> : (
                   <View style={styles.pickerContent}>
@@ -286,7 +286,7 @@ export default function EmployeeRegisterScreen() {
 
               {formError ? (
                 <View style={[styles.errorBox, { backgroundColor: Colors.error + '15', borderColor: Colors.error + '40' }]}>
-                  <Text style={[styles.errorText, { color: Colors.error }]}>⚠️ {formError}</Text>
+                  <Text style={[styles.errorText, { color: theme.error }]}>⚠️ {formError}</Text>
                 </View>
               ) : null}
 

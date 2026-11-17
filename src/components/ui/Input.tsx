@@ -51,7 +51,7 @@ export const Input: React.FC<InputProps> = ({
       {label && (
         <Text style={[styles.label, { color: theme.textSecondary }]}>
           {label}
-          {required && <Text style={{ color: Colors.error }}> *</Text>}
+          {required && <Text style={{ color: theme.error }}> *</Text>}
         </Text>
       )}
       <View
@@ -98,7 +98,7 @@ export const Input: React.FC<InputProps> = ({
         )}
       </View>
       {error && (
-        <Text style={[styles.error, { color: Colors.error }]}>{error}</Text>
+        <Text style={[styles.error, { color: theme.error }]}>{error}</Text>
       )}
       {hint && !error && (
         <Text style={[styles.hint, { color: theme.textMuted }]}>{hint}</Text>

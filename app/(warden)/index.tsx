@@ -111,7 +111,7 @@ export default function WardenHomeScreen() {
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <View>
-          <Text style={[styles.roleTag, { color: Colors.primary }]}>🛡️ WARDEN PORTAL</Text>
+          <Text style={[styles.roleTag, { color: theme.primary }]}>🛡️ WARDEN PORTAL</Text>
           <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
             {profile?.full_name || 'Property Warden'}
           </Text>
@@ -129,48 +129,48 @@ export default function WardenHomeScreen() {
 
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         {/* KPI Grid */}
         <View style={styles.kpiGrid}>
           <TouchableOpacity
-            style={[styles.kpiCard, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}
+            style={[styles.kpiCard, { backgroundColor: isDark ? '#2A2415' : '#FBF0D6', borderColor: isDark ? '#4A4220' : '#EBD9A8' }]}
             onPress={() => router.push('/(warden)/approvals')}
           >
-            <Text style={[styles.kpiValue, { color: '#92400E' }]}>{pendingCount}</Text>
-            <Text style={[styles.kpiLabel, { color: '#92400E' }]}>Pending KYC</Text>
-            <Text style={[styles.kpiHint, { color: '#B45309' }]}>Tap to review →</Text>
+            <Text style={[styles.kpiValue, { color: isDark ? '#E8A33D' : '#8A6111' }]}>{pendingCount}</Text>
+            <Text style={[styles.kpiLabel, { color: isDark ? '#E8A33D' : '#8A6111' }]}>Pending KYC</Text>
+            <Text style={[styles.kpiHint, { color: isDark ? '#C9964A' : '#9A6B1F' }]}>Tap to review →</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.kpiCard, { backgroundColor: '#DBEAFE', borderColor: '#BFDBFE' }]}
+            style={[styles.kpiCard, { backgroundColor: isDark ? '#1E2417' : '#E8EDD4', borderColor: isDark ? '#3A4430' : '#C7D69B' }]}
             onPress={() => router.push('/(warden)/beds')}
           >
-            <Text style={[styles.kpiValue, { color: '#1E40AF' }]}>
+            <Text style={[styles.kpiValue, { color: isDark ? '#A8BC6B' : '#3F4C1C' }]}>
               {occupiedBeds}/{totalBeds}
             </Text>
-            <Text style={[styles.kpiLabel, { color: '#1E40AF' }]}>Occupancy ({occRate}%)</Text>
-            <Text style={[styles.kpiHint, { color: '#2563EB' }]}>Manage beds →</Text>
+            <Text style={[styles.kpiLabel, { color: isDark ? '#A8BC6B' : '#3F4C1C' }]}>Occupancy ({occRate}%)</Text>
+            <Text style={[styles.kpiHint, { color: isDark ? '#8FA34E' : '#5E7030' }]}>Manage beds →</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.kpiCard, { backgroundColor: '#FEE2E2', borderColor: '#FECACA' }]}
+            style={[styles.kpiCard, { backgroundColor: isDark ? '#2A1B19' : '#FBE3E1', borderColor: isDark ? '#4A2C28' : '#F3C9C4' }]}
             onPress={() => router.push('/(warden)/dues')}
           >
-            <Text style={[styles.kpiValue, { color: '#991B1B' }]}>
+            <Text style={[styles.kpiValue, { color: isDark ? '#E07066' : '#9B2C22' }]}>
               {formatCurrency(totalDuesPaise, true)}
             </Text>
-            <Text style={[styles.kpiLabel, { color: '#991B1B' }]}>Rent Dues</Text>
-            <Text style={[styles.kpiHint, { color: '#DC2626' }]}>Collect dues →</Text>
+            <Text style={[styles.kpiLabel, { color: isDark ? '#E07066' : '#9B2C22' }]}>Rent Dues</Text>
+            <Text style={[styles.kpiHint, { color: isDark ? '#C4675E' : '#B03A30' }]}>Collect dues →</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.kpiCard, { backgroundColor: '#DCFCE7', borderColor: '#BBF7D0' }]}
+            style={[styles.kpiCard, { backgroundColor: isDark ? '#1E2A1C' : '#E4F0DC', borderColor: isDark ? '#33472F' : '#C6DFB8' }]}
             onPress={() => router.push('/(warden)/complaints')}
           >
-            <Text style={[styles.kpiValue, { color: '#166534' }]}>{openComplaints}</Text>
-            <Text style={[styles.kpiLabel, { color: '#166534' }]}>Active Tickets</Text>
-            <Text style={[styles.kpiHint, { color: '#16A34A' }]}>Resolve issues →</Text>
+            <Text style={[styles.kpiValue, { color: isDark ? '#7FB85C' : '#3D6B2A' }]}>{openComplaints}</Text>
+            <Text style={[styles.kpiLabel, { color: isDark ? '#7FB85C' : '#3D6B2A' }]}>Active Tickets</Text>
+            <Text style={[styles.kpiHint, { color: isDark ? '#6FA652' : '#4A7D33' }]}>Resolve issues →</Text>
           </TouchableOpacity>
         </View>
 
@@ -178,7 +178,7 @@ export default function WardenHomeScreen() {
         <Card style={styles.occCard}>
           <View style={styles.occHeader}>
             <Text style={[styles.occTitle, { color: theme.text }]}>Real-time Bed Capacity</Text>
-            <Text style={[styles.occPct, { color: Colors.primary }]}>{occRate}% Filled</Text>
+            <Text style={[styles.occPct, { color: theme.primary }]}>{occRate}% Filled</Text>
           </View>
           <View style={[styles.progressTrack, { backgroundColor: theme.surfaceAlt }]}>
             <View style={[styles.progressBar, { width: `${occRate}%`, backgroundColor: Colors.primary }]} />
@@ -196,7 +196,7 @@ export default function WardenHomeScreen() {
             style={[styles.actionRow, { borderBottomColor: theme.border }]}
             onPress={() => router.push('/(warden)/approvals')}
           >
-            <View style={styles.actionIconBox}>
+            <View style={[styles.actionIconBox, { backgroundColor: isDark ? '#2A3122' : '#EFF1E6' }]}>
               <Text style={{ fontSize: 20 }}>📋</Text>
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
@@ -212,7 +212,7 @@ export default function WardenHomeScreen() {
             style={[styles.actionRow, { borderBottomColor: theme.border }]}
             onPress={() => router.push('/(warden)/beds')}
           >
-            <View style={styles.actionIconBox}>
+            <View style={[styles.actionIconBox, { backgroundColor: isDark ? '#2A3122' : '#EFF1E6' }]}>
               <Text style={{ fontSize: 20 }}>🛏️</Text>
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
@@ -228,7 +228,7 @@ export default function WardenHomeScreen() {
             style={[styles.actionRow, { borderBottomColor: theme.border }]}
             onPress={() => router.push('/(warden)/dues')}
           >
-            <View style={styles.actionIconBox}>
+            <View style={[styles.actionIconBox, { backgroundColor: isDark ? '#2A3122' : '#EFF1E6' }]}>
               <Text style={{ fontSize: 20 }}>💵</Text>
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
@@ -247,14 +247,14 @@ export default function WardenHomeScreen() {
               router.replace('/(auth)/welcome');
             }}
           >
-            <View style={styles.actionIconBox}>
+            <View style={[styles.actionIconBox, { backgroundColor: isDark ? '#2A3122' : '#EFF1E6' }]}>
               <Text style={{ fontSize: 20 }}>🚪</Text>
             </View>
             <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-              <Text style={[styles.actionTitle, { color: Colors.error }]}>Sign Out</Text>
+              <Text style={[styles.actionTitle, { color: theme.error }]}>Sign Out</Text>
               <Text style={[styles.actionSub, { color: theme.textSecondary }]}>Exit warden session</Text>
             </View>
-            <Text style={{ fontSize: 18, color: Colors.error }}>›</Text>
+            <Text style={{ fontSize: 18, color: theme.error }}>›</Text>
           </TouchableOpacity>
         </Card>
       </ScrollView>
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   actionCard: { padding: Spacing.base },
   actionSectionTitle: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.xs, letterSpacing: 1, marginBottom: Spacing.sm },
   actionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md, borderBottomWidth: 1 },
-  actionIconBox: { width: 36, height: 36, borderRadius: BorderRadius.md, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center' },
+  actionIconBox: { width: 36, height: 36, borderRadius: BorderRadius.md, backgroundColor: '#EFF1E6', justifyContent: 'center', alignItems: 'center' },
   actionTitle: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.sm },
   actionSub: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs, marginTop: 1 },
 });

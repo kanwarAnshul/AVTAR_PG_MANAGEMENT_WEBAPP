@@ -213,7 +213,7 @@ export default function WardenBedsScreen() {
 
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         {rooms.length === 0 ? (
           <EmptyState
@@ -251,16 +251,12 @@ export default function WardenBedsScreen() {
                       style={[
                         styles.bedTile,
                         {
-                          backgroundColor: isAvailable
-                            ? '#DCFCE7'
-                            : isOccupied
-                            ? '#FEE2E2'
-                            : '#FEF3C7',
-                          borderColor: isAvailable
-                            ? '#16A34A'
-                            : isOccupied
-                            ? '#DC2626'
-                            : '#D97706',
+                          backgroundColor: isDark
+                            ? (isAvailable ? '#1E2A1C' : isOccupied ? '#2A1B19' : '#2A2415')
+                            : (isAvailable ? '#E4F0DC' : isOccupied ? '#FBE3E1' : '#FBF0D6'),
+                          borderColor: isDark
+                            ? (isAvailable ? '#4E7A3A' : isOccupied ? '#8A4038' : '#7A6420')
+                            : (isAvailable ? '#4A7D33' : isOccupied ? '#B03A30' : '#9A6B1F'),
                         },
                       ]}
                       onPress={() => {
@@ -283,10 +279,10 @@ export default function WardenBedsScreen() {
                         }
                       }}
                     >
-                      <Text style={[styles.bedLabel, { color: isAvailable ? '#166534' : isOccupied ? '#991B1B' : '#92400E' }]}>
+                      <Text style={[styles.bedLabel, { color: isDark ? (isAvailable ? '#7FB85C' : isOccupied ? '#E07066' : '#E8A33D') : (isAvailable ? '#3D6B2A' : isOccupied ? '#9B2C22' : '#8A6111') }]}>
                         Bed {bed.label}
                       </Text>
-                      <Text style={[styles.bedStatus, { color: isAvailable ? '#166534' : isOccupied ? '#991B1B' : '#92400E' }]} numberOfLines={1}>
+                      <Text style={[styles.bedStatus, { color: isDark ? (isAvailable ? '#7FB85C' : isOccupied ? '#E07066' : '#E8A33D') : (isAvailable ? '#3D6B2A' : isOccupied ? '#9B2C22' : '#8A6111') }]} numberOfLines={1}>
                         {isAvailable ? 'Available' : tenant?.full_name || 'Occupied'}
                       </Text>
                     </TouchableOpacity>
@@ -340,7 +336,7 @@ export default function WardenBedsScreen() {
                       </Text>
                     </View>
                     {selectedTenantId === t.id && (
-                      <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>✓ Selected</Text>
+                      <Text style={{ color: theme.primary, fontWeight: 'bold' }}>✓ Selected</Text>
                     )}
                   </TouchableOpacity>
                 ))}

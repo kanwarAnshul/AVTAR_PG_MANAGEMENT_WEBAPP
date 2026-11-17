@@ -151,35 +151,38 @@ export const friendlyDbError = (err: unknown): string => {
 };
 
 // Status colors
+// Semantic green / amber / red are kept (they mean the same thing
+// everywhere); the neutral and blue chips are tinted to match the
+// Olive & Ember palette.
 export const getStatusColor = (status: string): { bg: string; text: string } => {
   const map: Record<string, { bg: string; text: string }> = {
-    pending:     { bg: '#FEF3C7', text: '#92400E' },
-    approved:    { bg: '#DCFCE7', text: '#166534' },
-    rejected:    { bg: '#FEE2E2', text: '#991B1B' },
-    resubmission:{ bg: '#E0F2FE', text: '#075985' },
-    open:        { bg: '#FEF3C7', text: '#92400E' },
-    in_progress: { bg: '#DBEAFE', text: '#1E40AF' },
-    resolved:    { bg: '#DCFCE7', text: '#166534' },
-    closed:      { bg: '#F3F4F6', text: '#374151' },
-    available:   { bg: '#DCFCE7', text: '#166534' },
-    occupied:    { bg: '#FEE2E2', text: '#991B1B' },
-    maintenance: { bg: '#FEF3C7', text: '#92400E' },
-    paid:        { bg: '#DCFCE7', text: '#166534' },
-    partial:     { bg: '#FEF3C7', text: '#92400E' },
-    overdue:     { bg: '#FEE2E2', text: '#991B1B' },
-    draft:       { bg: '#F3F4F6', text: '#374151' },
-    sent:        { bg: '#DBEAFE', text: '#1E40AF' },
-    active:      { bg: '#DCFCE7', text: '#166534' },
-    checked_out: { bg: '#F3F4F6', text: '#374151' },
-    present:     { bg: '#DCFCE7', text: '#166534' },
-    absent:      { bg: '#FEE2E2', text: '#991B1B' },
-    fine:        { bg: '#FEE2E2', text: '#991B1B' },
-    low:         { bg: '#DCFCE7', text: '#166534' },
-    medium:      { bg: '#FEF3C7', text: '#92400E' },
-    high:        { bg: '#FFEDD5', text: '#9A3412' },
-    urgent:      { bg: '#FEE2E2', text: '#991B1B' },
+    pending:     { bg: '#FBF0D6', text: '#8A6111' },
+    approved:    { bg: '#E4F0DC', text: '#3D6B2A' },
+    rejected:    { bg: '#FBE3E1', text: '#9B2C22' },
+    resubmission:{ bg: '#E6EFF3', text: '#2A5F7C' },
+    open:        { bg: '#FBF0D6', text: '#8A6111' },
+    in_progress: { bg: '#E8EDD4', text: '#3F4C1C' },
+    resolved:    { bg: '#E4F0DC', text: '#3D6B2A' },
+    closed:      { bg: '#EFF1E6', text: '#4A5140' },
+    available:   { bg: '#E4F0DC', text: '#3D6B2A' },
+    occupied:    { bg: '#FBE3E1', text: '#9B2C22' },
+    maintenance: { bg: '#FBF0D6', text: '#8A6111' },
+    paid:        { bg: '#E4F0DC', text: '#3D6B2A' },
+    partial:     { bg: '#FBF0D6', text: '#8A6111' },
+    overdue:     { bg: '#FBE3E1', text: '#9B2C22' },
+    draft:       { bg: '#EFF1E6', text: '#4A5140' },
+    sent:        { bg: '#E6EFF3', text: '#2A5F7C' },
+    active:      { bg: '#E4F0DC', text: '#3D6B2A' },
+    checked_out: { bg: '#EFF1E6', text: '#4A5140' },
+    present:     { bg: '#E4F0DC', text: '#3D6B2A' },
+    absent:      { bg: '#FBE3E1', text: '#9B2C22' },
+    fine:        { bg: '#FBE3E1', text: '#9B2C22' },
+    low:         { bg: '#E4F0DC', text: '#3D6B2A' },
+    medium:      { bg: '#FBF0D6', text: '#8A6111' },
+    high:        { bg: '#FBEBDD', text: '#9A4A12' },
+    urgent:      { bg: '#FBE3E1', text: '#9B2C22' },
   };
-  return map[status] ?? { bg: '#F3F4F6', text: '#374151' };
+  return map[status] ?? { bg: '#EFF1E6', text: '#4A5140' };
 };
 
 export const capitalize = (s: string): string =>

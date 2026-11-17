@@ -24,7 +24,7 @@ export async function registerForPushNotificationsAsync(userId: string): Promise
       name: 'AVTAR PG Notifications',
       importance: 7, // AndroidImportance.MAX
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#6366F1',
+      lightColor: '#8FA34E',
     });
   }
 

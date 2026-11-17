@@ -227,10 +227,10 @@ export default function OwnerReportsScreen() {
 
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         {/* Monthly Billing Engine Banner */}
-        <Card variant="elevated" style={[styles.billingCard, { backgroundColor: isDark ? '#1E293B' : '#0F172A' }]}>
+        <Card variant="elevated" style={[styles.billingCard, { backgroundColor: isDark ? '#1E2417' : '#2A3122' }]}>
           <View style={styles.billingTop}>
             <View>
               <Text style={styles.billingTag}>AUTOMATED BILLING ENGINE</Text>
@@ -255,15 +255,15 @@ export default function OwnerReportsScreen() {
           <Text style={[styles.ledgerTitle, { color: theme.text }]}>PROFIT & CASH FLOW STATEMENT</Text>
           <View style={styles.ledgerRow}>
             <Text style={[styles.lLabel, { color: theme.textSecondary }]}>Rent Inflow (Paid Invoices)</Text>
-            <Text style={[styles.lVal, { color: Colors.success }]}>+{formatCurrency(totalInflow)}</Text>
+            <Text style={[styles.lVal, { color: theme.success }]}>+{formatCurrency(totalInflow)}</Text>
           </View>
           <View style={styles.ledgerRow}>
             <Text style={[styles.lLabel, { color: theme.textSecondary }]}>Operating Expenses</Text>
-            <Text style={[styles.lVal, { color: Colors.error }]}>-{formatCurrency(totalExpense)}</Text>
+            <Text style={[styles.lVal, { color: theme.error }]}>-{formatCurrency(totalExpense)}</Text>
           </View>
           <View style={[styles.ledgerRow, styles.netRow, { borderTopColor: theme.border }]}>
             <Text style={[styles.netLabel, { color: theme.text }]}>Net Operating Surplus</Text>
-            <Text style={[styles.netVal, { color: Colors.primary }]}>{formatCurrency(netProfit)}</Text>
+            <Text style={[styles.netVal, { color: theme.primary }]}>{formatCurrency(netProfit)}</Text>
           </View>
           <Text style={[styles.depositNote, { color: theme.textMuted }]}>
             ℹ️ As per standard accounting and PRD: Security deposits are excluded from revenue and held in escrow.
@@ -302,7 +302,7 @@ export default function OwnerReportsScreen() {
                   {e.category?.toUpperCase()} · {formatDate(e.expense_date)}
                 </Text>
               </View>
-              <Text style={[styles.itemAmt, { color: Colors.error }]}>
+              <Text style={[styles.itemAmt, { color: theme.error }]}>
                 -{formatCurrency(e.amount)}
               </Text>
             </View>
@@ -320,7 +320,7 @@ export default function OwnerReportsScreen() {
                   {p.receipt_no} · {p.mode?.toUpperCase()} · {formatDate(p.payment_date)}
                 </Text>
               </View>
-              <Text style={[styles.itemAmt, { color: Colors.success }]}>
+              <Text style={[styles.itemAmt, { color: theme.success }]}>
                 +{formatCurrency(p.amount)}
               </Text>
             </View>
@@ -377,6 +377,8 @@ const styles = StyleSheet.create({
   scroll: { padding: Spacing.base, paddingBottom: Spacing['3xl'] },
   billingCard: { padding: Spacing.base, borderRadius: BorderRadius.xl, marginBottom: Spacing.base },
   billingTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  // Static style: the billing card is always dark (see line 233),
+  // so the ember accent is correct in both themes.
   billingTag: { color: Colors.accent, fontFamily: Typography.fontFamily.semiBold, fontSize: 10, letterSpacing: 1 },
   billingTitle: { color: '#FFF', fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.base, marginTop: 2 },
   billingSub: { color: '#FFFFFF80', fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs, marginTop: Spacing.xs, lineHeight: 18 },

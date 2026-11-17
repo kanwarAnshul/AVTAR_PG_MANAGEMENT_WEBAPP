@@ -112,7 +112,7 @@ export default function OwnerHomeScreen() {
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border }]}>
         <View>
-          <Text style={[styles.roleLabel, { color: Colors.accent }]}>👑 SUPER ADMIN (OWNER)</Text>
+          <Text style={[styles.roleLabel, { color: theme.accent }]}>👑 SUPER ADMIN (OWNER)</Text>
           <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
             {profile?.full_name || 'Avtar Singh'}
           </Text>
@@ -127,7 +127,7 @@ export default function OwnerHomeScreen() {
 
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         {!hasLiveData && (
           <View style={[styles.emptyHint, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}>
@@ -148,19 +148,19 @@ export default function OwnerHomeScreen() {
           <View style={[styles.finGrid, { borderTopColor: isDark ? '#FFFFFF20' : theme.border }]}>
             <View style={styles.finItem}>
               <Text style={[styles.finSubLabel, { color: theme.textSecondary }]}>Total Inflow</Text>
-              <Text style={[styles.finVal, { color: Colors.success }]}>
+              <Text style={[styles.finVal, { color: theme.success }]}>
                 +{formatCurrency(totalCollections, true)}
               </Text>
             </View>
             <View style={styles.finItem}>
               <Text style={[styles.finSubLabel, { color: theme.textSecondary }]}>Expenses</Text>
-              <Text style={[styles.finVal, { color: Colors.error }]}>
+              <Text style={[styles.finVal, { color: theme.error }]}>
                 -{formatCurrency(totalExpenses, true)}
               </Text>
             </View>
             <View style={styles.finItem}>
               <Text style={[styles.finSubLabel, { color: theme.textSecondary }]}>Deposits Held</Text>
-              <Text style={[styles.finVal, { color: Colors.accent }]}>
+              <Text style={[styles.finVal, { color: theme.accent }]}>
                 {formatCurrency(totalDeposits, true)}
               </Text>
             </View>
@@ -174,7 +174,7 @@ export default function OwnerHomeScreen() {
             onPress={() => router.push('/(owner)/approvals')}
           >
             <Text style={{ fontSize: 24 }}>⏳</Text>
-            <Text style={[styles.kpiNum, { color: Colors.accent }]}>{pendingApprovals}</Text>
+            <Text style={[styles.kpiNum, { color: theme.accent }]}>{pendingApprovals}</Text>
             <Text style={[styles.kpiText, { color: theme.textSecondary }]}>Pending KYC</Text>
           </TouchableOpacity>
 
@@ -183,7 +183,7 @@ export default function OwnerHomeScreen() {
             onPress={() => router.push('/(owner)/reports')}
           >
             <Text style={{ fontSize: 24 }}>🛏️</Text>
-            <Text style={[styles.kpiNum, { color: Colors.primary }]}>{occupiedBeds}/{totalBeds}</Text>
+            <Text style={[styles.kpiNum, { color: theme.primary }]}>{occupiedBeds}/{totalBeds}</Text>
             <Text style={[styles.kpiText, { color: theme.textSecondary }]}>Occupancy ({occRate}%)</Text>
           </TouchableOpacity>
 
@@ -192,7 +192,7 @@ export default function OwnerHomeScreen() {
             onPress={() => router.push('/(owner)/wardens')}
           >
             <Text style={{ fontSize: 24 }}>🛡️</Text>
-            <Text style={[styles.kpiNum, { color: Colors.success }]}>{totalTenants}</Text>
+            <Text style={[styles.kpiNum, { color: theme.success }]}>{totalTenants}</Text>
             <Text style={[styles.kpiText, { color: theme.textSecondary }]}>Active Tenants</Text>
           </TouchableOpacity>
         </View>
@@ -201,7 +201,7 @@ export default function OwnerHomeScreen() {
         <Card style={styles.chartCard}>
           <View style={styles.chartHeader}>
             <Text style={[styles.chartTitle, { color: theme.text }]}>Property Occupancy Capacity</Text>
-            <Text style={[styles.chartRate, { color: Colors.primary }]}>{occRate}%</Text>
+            <Text style={[styles.chartRate, { color: theme.primary }]}>{occRate}%</Text>
           </View>
           <View style={[styles.barTrack, { backgroundColor: theme.surfaceAlt }]}>
             <View style={[styles.barFill, { width: `${occRate}%`, backgroundColor: Colors.primary }]} />
@@ -231,7 +231,7 @@ export default function OwnerHomeScreen() {
                 Idempotent bulk billing for all active tenancies
               </Text>
             </View>
-            <Text style={{ fontSize: 18, color: Colors.primary }}>›</Text>
+            <Text style={{ fontSize: 18, color: theme.primary }}>›</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -245,7 +245,7 @@ export default function OwnerHomeScreen() {
                 Sanitized spreadsheet export for accounts & tax
               </Text>
             </View>
-            <Text style={{ fontSize: 18, color: Colors.primary }}>›</Text>
+            <Text style={{ fontSize: 18, color: theme.primary }}>›</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -259,7 +259,7 @@ export default function OwnerHomeScreen() {
                 Add managers, assign properties & roles
               </Text>
             </View>
-            <Text style={{ fontSize: 18, color: Colors.primary }}>›</Text>
+            <Text style={{ fontSize: 18, color: theme.primary }}>›</Text>
           </TouchableOpacity>
         </Card>
       </ScrollView>
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   errorWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xl },
   errorTitle: { fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.lg, marginTop: Spacing.md, textAlign: 'center' },
   errorSub: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.sm, marginTop: Spacing.sm, textAlign: 'center', lineHeight: 20 },
-  retryBtn: { marginTop: Spacing.base, backgroundColor: '#6366F1', paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xl, borderRadius: 10 },
+  retryBtn: { marginTop: Spacing.base, backgroundColor: Colors.primary, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.xl, borderRadius: 10 },
   retryText: { color: '#FFF', fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.sm },
   emptyHint: { padding: Spacing.base, borderRadius: 12, borderWidth: 1, alignItems: 'center', marginBottom: Spacing.base },
   emptyTitle: { fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.base, marginTop: Spacing.sm },

@@ -109,7 +109,7 @@ export default function WardenComplaintsScreen() {
 
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         {tickets.length === 0 ? (
           <EmptyState
@@ -146,7 +146,7 @@ export default function WardenComplaintsScreen() {
                   )}
 
                   <View style={[styles.footerRow, { borderTopColor: theme.border }]}>
-                    <Text style={[styles.actionPrompt, { color: Colors.primary }]}>
+                    <Text style={[styles.actionPrompt, { color: theme.primary }]}>
                       {t.status === 'resolved' ? 'View Details ✓' : 'Update Status & Resolve →'}
                     </Text>
                   </View>

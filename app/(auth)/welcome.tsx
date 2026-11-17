@@ -97,9 +97,9 @@ export default function WelcomeScreen() {
 
           {/* Live-data config guard */}
           {(!isSupabaseConfigured || configError) && (
-            <View style={[styles.configWarn, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
-              <Text style={styles.configWarnTitle}>⚠️ Live data not connected</Text>
-              <Text style={styles.configWarnSub}>
+            <View style={[styles.configWarn, { backgroundColor: isDark ? '#2A1B19' : '#FBE3E1', borderColor: isDark ? '#4A2C28' : '#F3C9C4' }]}>
+              <Text style={[styles.configWarnTitle, { color: isDark ? '#E07066' : '#9B2C22' }]}>⚠️ Live data not connected</Text>
+              <Text style={[styles.configWarnSub, { color: isDark ? '#C4675E' : '#7F2D24' }]}>
                 {configError ?? 'Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env, then restart the app.'}
               </Text>
             </View>
@@ -215,12 +215,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   configWarnTitle: {
-    color: '#991B1B',
     fontFamily: Typography.fontFamily.bold,
     fontSize: Typography.size.sm,
   },
   configWarnSub: {
-    color: '#7F1D1D',
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.xs,
     marginTop: 4,

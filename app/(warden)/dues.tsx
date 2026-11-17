@@ -119,7 +119,7 @@ export default function WardenDuesScreen() {
 
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         {dues.length === 0 ? (
           <EmptyState
@@ -145,7 +145,7 @@ export default function WardenDuesScreen() {
                     </Text>
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                    <Text style={[styles.dueAmount, { color: Colors.error }]}>
+                    <Text style={[styles.dueAmount, { color: theme.error }]}>
                       {formatCurrency(item.balance_due)}
                     </Text>
                     <Badge label={item.status} status={item.status} size="sm" />
@@ -180,7 +180,7 @@ export default function WardenDuesScreen() {
 
             <View style={[styles.amountBox, { backgroundColor: theme.surfaceAlt }]}>
               <Text style={[styles.amountLabel, { color: theme.textSecondary }]}>Collected Amount</Text>
-              <Text style={[styles.amountDisplay, { color: Colors.success }]}>
+              <Text style={[styles.amountDisplay, { color: theme.success }]}>
                 {selectedInvoice ? formatCurrency(selectedInvoice.balance_due) : ''}
               </Text>
             </View>

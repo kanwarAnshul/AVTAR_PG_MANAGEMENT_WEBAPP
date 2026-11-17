@@ -41,7 +41,7 @@ Supabase Dashboard → **SQL Editor** → New query → paste the whole file →
 supabase/migrations/007_sms_hardening.sql
 ```
 
-(Or paste `supabase/SUPABASE_SETUP.sql`, which now contains 003→007 in one file.)
+(Or paste `supabase/SUPABASE_SETUP.sql`, which now contains 003→009 in one file.)
 
 It adds:
 

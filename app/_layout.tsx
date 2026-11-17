@@ -111,10 +111,10 @@ export default function RootLayout() {
   // Continue if fonts are loaded, or if font error occurred, or after 2s safety timeout
   if (!fontsLoaded && !fontError && !timedOut) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0F172A' }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#10130D' }}>
         <Text style={{ color: '#FFF', fontSize: 24, marginBottom: 8 }}>🏠</Text>
         <Text style={{ color: '#FFF', fontSize: 18, fontWeight: 'bold' }}>AVTAR SINGH PG</Text>
-        <Text style={{ color: '#94A3B8', fontSize: 14, marginTop: 4 }}>Loading application...</Text>
+        <Text style={{ color: '#A8B396', fontSize: 14, marginTop: 4 }}>Loading application...</Text>
       </View>
     );
   }

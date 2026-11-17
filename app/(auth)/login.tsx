@@ -152,14 +152,14 @@ export default function LoginScreen() {
               onPress={() => router.push('/(auth)/forgot-password')}
               style={styles.forgotLink}
             >
-              <Text style={[styles.forgotText, { color: Colors.primary }]}>
+              <Text style={[styles.forgotText, { color: theme.primary }]}>
                 Forgot password? Get an OTP
               </Text>
             </TouchableOpacity>
 
             {loginError ? (
               <View style={[styles.errorBox, { backgroundColor: Colors.error + '15', borderColor: Colors.error + '40' }]}>
-                <Text style={[styles.errorText, { color: Colors.error }]}>⚠️ {loginError}</Text>
+                <Text style={[styles.errorText, { color: theme.error }]}>⚠️ {loginError}</Text>
               </View>
             ) : null}
 
@@ -176,7 +176,7 @@ export default function LoginScreen() {
             >
               <Text style={[styles.registerText, { color: theme.textSecondary }]}>
                 New tenant?{' '}
-                <Text style={{ color: Colors.primary, fontFamily: Typography.fontFamily.semiBold }}>
+                <Text style={{ color: theme.primary, fontFamily: Typography.fontFamily.semiBold }}>
                   Register here
                 </Text>
               </Text>

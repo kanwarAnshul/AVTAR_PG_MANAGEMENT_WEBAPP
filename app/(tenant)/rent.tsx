@@ -165,16 +165,16 @@ export default function TenantRentScreen() {
         <html>
         <head>
           <style>
-            body { font-family: -apple-system, sans-serif; padding: 30px; color: #0F172A; }
-            .header { text-align: center; border-bottom: 2px solid #6366F1; padding-bottom: 15px; margin-bottom: 20px; }
-            .title { font-size: 24px; font-weight: bold; color: #4F46E5; }
+            body { font-family: -apple-system, sans-serif; padding: 30px; color: #171A12; }
+            .header { text-align: center; border-bottom: 2px solid #4F5E28; padding-bottom: 15px; margin-bottom: 20px; }
+            .title { font-size: 24px; font-weight: bold; color: #4F5E28; }
             .row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
             .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            .table th, .table td { border: 1px solid #E2E8F0; padding: 10px; text-align: left; }
-            .table th { background: #F1F5F9; }
+            .table th, .table td { border: 1px solid #DCE1CC; padding: 10px; text-align: left; }
+            .table th { background: #EFF1E6; }
             .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
             .paid { background: #DCFCE7; color: #166534; }
-            .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #64748B; }
+            .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #5C6450; }
           </style>
         </head>
         <body>
@@ -236,7 +236,7 @@ export default function TenantRentScreen() {
       <ScreenHeader title="Rent & Invoices" subtitle="View statements, pay rent & download receipts" />
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         {/* Total Outstanding Card */}
         <Card variant="elevated" style={[styles.summaryCard, { backgroundColor: totalDue > 0 ? (isDark ? '#3B1E22' : '#FEF2F2') : (isDark ? '#1C3127' : '#F0FDF4') }]}>
@@ -283,7 +283,7 @@ export default function TenantRentScreen() {
               </ScrollView>
             </>
           ) : (
-            <Text style={[styles.dueDayLocked, { color: Colors.error }]}>
+            <Text style={[styles.dueDayLocked, { color: theme.error }]}>
               🔒 Locked after the 15th — you can change the due date again from the 1st of next month.
             </Text>
           )}
@@ -311,7 +311,7 @@ export default function TenantRentScreen() {
                 </View>
                 <View style={styles.metricRow}>
                   <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>Paid Amount</Text>
-                  <Text style={[styles.metricValue, { color: Colors.success }]}>{formatCurrency(inv.paid_amount)}</Text>
+                  <Text style={[styles.metricValue, { color: theme.success }]}>{formatCurrency(inv.paid_amount)}</Text>
                 </View>
                 <View style={styles.metricRow}>
                   <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>Balance Due</Text>
@@ -361,7 +361,7 @@ export default function TenantRentScreen() {
                       {formatDate(p.payment_date)} · {p.mode?.toUpperCase()} {p.reference_no ? `· Ref: ${p.reference_no}` : ''}
                     </Text>
                   </View>
-                  <Text style={[styles.paymentAmount, { color: Colors.success }]}>
+                  <Text style={[styles.paymentAmount, { color: theme.success }]}>
                     +{formatCurrency(p.amount)}
                   </Text>
                 </View>
@@ -382,7 +382,7 @@ export default function TenantRentScreen() {
 
             <View style={[styles.amountBox, { backgroundColor: theme.surfaceAlt }]}>
               <Text style={[styles.amountLabel, { color: theme.textSecondary }]}>Amount to Pay</Text>
-              <Text style={[styles.amountDisplay, { color: Colors.primary }]}>
+              <Text style={[styles.amountDisplay, { color: theme.primary }]}>
                 {selectedInvoice ? formatCurrency(selectedInvoice.balance_due) : ''}
               </Text>
             </View>

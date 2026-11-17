@@ -173,7 +173,7 @@ export default function TenantPresenceScreen() {
       <ScreenHeader title="Presence & Safety" subtitle={`Today ${today}`} />
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         {/* My status */}
         <Card style={[styles.card, { borderColor: myStatus === 'present' ? Colors.success : myStatus === 'absent' ? Colors.error : theme.border }]}>
@@ -216,7 +216,7 @@ export default function TenantPresenceScreen() {
 
         {/* Emergency */}
         <Card style={[styles.card, { borderColor: Colors.error + '60' }]}>
-          <Text style={[styles.sectionTitle, { color: Colors.error }]}>🚨 EMERGENCY</Text>
+          <Text style={[styles.sectionTitle, { color: theme.error }]}>🚨 EMERGENCY</Text>
           <Text style={[styles.hint, { color: theme.textSecondary }]}>
             Locked out late at night or unusual activity in the PG? Alert your whole room + warden instantly.
           </Text>

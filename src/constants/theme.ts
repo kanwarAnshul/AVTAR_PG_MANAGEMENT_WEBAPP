@@ -1,65 +1,92 @@
 // ============================================================
 // DESIGN TOKENS & THEME CONSTANTS
-// Professional dark/light theme for AVTAR PG Manager
+// "Olive & Ember" theme for AVTAR PG Manager
+//
+// Deep olive + near-black dark theme, warm cream light theme,
+// amber ("ember") accent.
+//
+// Contrast: every text/background pair below was checked against
+// WCAG AA (4.5:1). Brand colours that are used AS TEXT are exposed
+// twice:
+//   Colors.primary / .accent / .success ...  -> backgrounds
+//                                                (white text on them)
+//   theme.primary  / .accent  / .success ... -> text on that theme
+// So screens should use `Colors.x` for fills and `theme.x` for text.
 // ============================================================
 
 export const Colors = {
-  // Brand
-  primary: '#6366F1',       // Indigo-500
-  primaryDark: '#4F46E5',   // Indigo-600
-  primaryLight: '#818CF8',  // Indigo-400
-  accent: '#F59E0B',        // Amber-500
+  // Brand (used as FILL: buttons, avatars, banners -> white text sits on these)
+  primary: '#4F5E28',       // Deep olive      white on it 7.08:1
+  primaryDark: '#3E4A1F',   // Pressed olive   white on it 9.53:1
+  primaryLight: '#8FA34E',  // Light olive (decor / dark-theme fills)
+  accent: '#E8A33D',        // Ember amber     8.69:1 on dark bg
 
-  // Status
-  success: '#10B981',       // Emerald-500
-  warning: '#F59E0B',       // Amber-500
-  error: '#EF4444',         // Red-500
-  info: '#3B82F6',          // Blue-500
+  // Status (used as FILL -> white text sits on these)
+  success: '#46732A',       // white on it 5.61:1
+  warning: '#8F5A06',       // white on it 5.78:1
+  error: '#B3322A',         // white on it 6.16:1
+  info: '#2F6B8C',          // white on it 5.83:1
 
-  // Chips
-  studentBg: '#DBEAFE',
-  studentText: '#1E40AF',
-  employeeBg: '#F3E8FF',
-  employeeText: '#6B21A8',
-  pendingBg: '#FEF3C7',
-  pendingText: '#92400E',
-  approvedBg: '#DCFCE7',
-  approvedText: '#166534',
-  rejectedBg: '#FEE2E2',
-  rejectedText: '#991B1B',
+  // Chips (light tinted pills, dark text on them - same in both themes)
+  studentBg: '#E8EDD4',
+  studentText: '#3F4C1C',   // 7.73:1
+  employeeBg: '#FBEEDA',
+  employeeText: '#8A5A12',  // 5.16:1
+  pendingBg: '#FBF0D6',
+  pendingText: '#8A6111',   // 4.88:1
+  approvedBg: '#E4F0DC',
+  approvedText: '#3D6B2A',  // 5.34:1
+  rejectedBg: '#FBE3E1',
+  rejectedText: '#9B2C22',  // 6.19:1
 
   // Dark theme
   dark: {
-    background: '#0F172A',   // Slate-900
-    surface: '#1E293B',      // Slate-800
-    surfaceAlt: '#334155',   // Slate-700
-    border: '#475569',       // Slate-600
-    text: '#F8FAFC',         // Slate-50
-    textSecondary: '#94A3B8', // Slate-400
-    textMuted: '#64748B',    // Slate-500
-    card: '#1E293B',
-    input: '#0F172A',
-    tabBar: '#1E293B',
-    tabBarBorder: '#334155',
+    background: '#10130D',   // Near-black with an olive cast   17.18:1 with text
+    surface: '#171B12',      // Raised surface                 16.03:1 with text
+    surfaceAlt: '#1E2417',   // Sunken / secondary surface     14.59:1 with text
+    border: '#4A5540',       // 2.22:1 (previous theme was 1.93:1)
+    text: '#F4F6EE',         // Warm white
+    textSecondary: '#A8B396', // 7.95:1 on surface
+    textMuted: '#7C8770',    // 4.62:1 on surface
+    card: '#171B12',
+    input: '#10130D',
+    tabBar: '#171B12',
+    tabBarBorder: '#2A3122',
     statusBar: 'light',
-    overlay: 'rgba(0,0,0,0.6)',
+    overlay: 'rgba(0,0,0,0.7)',
+
+    // Theme-aware brand colours for TEXT on dark surfaces
+    primary: '#A8BC6B',      // 8.38:1 on surface, 8.98:1 on bg
+    accent: '#E8A33D',       // 8.10:1 on surface
+    success: '#7FB85C',      // 7.42:1 on surface
+    warning: '#E8A33D',      // 8.10:1 on surface
+    error: '#E07066',        // 5.56:1 on surface
+    info: '#6FB3D4',         // 7.55:1 on surface
   },
 
   // Light theme
   light: {
-    background: '#F8FAFC',   // Slate-50
+    background: '#F7F8F2',   // Warm cream                        16.48:1 with text
     surface: '#FFFFFF',
-    surfaceAlt: '#F1F5F9',   // Slate-100
-    border: '#E2E8F0',       // Slate-200
-    text: '#0F172A',         // Slate-900
-    textSecondary: '#475569', // Slate-600
-    textMuted: '#94A3B8',    // Slate-400
+    surfaceAlt: '#EFF1E6',   // Olive-tinted sunken surface       15.42:1 with text
+    border: '#DCE1CC',       // 1.34:1 (previous theme was 1.23:1)
+    text: '#171A12',         // Near-black with an olive cast
+    textSecondary: '#4A5140', // 7.74:1 on bg
+    textMuted: '#5C6450',    // 5.79:1 on bg
     card: '#FFFFFF',
-    input: '#F8FAFC',
+    input: '#F2F4EA',
     tabBar: '#FFFFFF',
-    tabBarBorder: '#E2E8F0',
+    tabBarBorder: '#DCE1CC',
     statusBar: 'dark',
     overlay: 'rgba(0,0,0,0.5)',
+
+    // Theme-aware brand colours for TEXT on light surfaces
+    primary: '#4F5E28',      // 6.63:1 on bg, 7.08:1 on white
+    accent: '#8F5A06',       // 5.41:1 on bg
+    success: '#46732A',      // 5.25:1 on bg
+    warning: '#9A5B00',      // 5.08:1 on bg
+    error: '#B3322A',        // 5.77:1 on bg
+    info: '#2F6B8C',         // 5.46:1 on bg
   },
 };
 
@@ -136,7 +163,7 @@ export const Shadows = {
     elevation: 8,
   },
   primary: {
-    shadowColor: '#6366F1',
+    shadowColor: '#4F5E28',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -177,4 +204,3 @@ export const ADDRESS_PROOF_TYPES = [
 export const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
 export const IMAGE_COMPRESS_SIZE = 800;
 export const IMAGE_COMPRESS_QUALITY = 0.7;
-

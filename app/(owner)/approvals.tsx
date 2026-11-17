@@ -29,6 +29,7 @@ export default function OwnerApprovalsScreen() {
 
   const [selectedReg, setSelectedReg] = useState<any>(null);
   const [decryptedPan, setDecryptedPan] = useState<string | null>(null);
+  const [panError, setPanError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const { data: queue = [], isLoading, refetch, isRefetching } = useQuery({
@@ -47,12 +48,21 @@ export default function OwnerApprovalsScreen() {
   const openReviewModal = async (reg: any) => {
     setSelectedReg(reg);
     setDecryptedPan(null);
+    setPanError(null);
     if (reg.pan_encrypted) {
       try {
-        const { data: pan } = await supabase.rpc('decrypt_pan', { encrypted_pan: reg.pan_encrypted });
-        setDecryptedPan(pan || reg.pan_encrypted);
+        const { data: pan, error } = await supabase.rpc('decrypt_pan', {
+          encrypted_pan: reg.pan_encrypted,
+        });
+        if (error || !pan) {
+          // Never fall back to printing the ciphertext - it is a
+          // meaningless base64 blob and looks like a bug to the owner.
+          setPanError('PAN could not be decrypted (decryption unavailable).');
+        } else {
+          setDecryptedPan(pan);
+        }
       } catch {
-        setDecryptedPan(reg.pan_encrypted);
+        setPanError('PAN could not be decrypted (decryption unavailable).');
       }
     }
   };
@@ -125,7 +135,7 @@ export default function OwnerApprovalsScreen() {
 
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         <Text style={[styles.sectionHeading, { color: theme.text }]}>ACTION REQUIRED</Text>
         {pending.length === 0 ? (
@@ -198,12 +208,19 @@ export default function OwnerApprovalsScreen() {
                 <View style={styles.infoRow}><Text style={[styles.iLabel, { color: theme.textSecondary }]}>Phone:</Text><Text style={[styles.iVal, { color: theme.text }]}>{selectedReg.phone}</Text></View>
                 <View style={styles.infoRow}><Text style={[styles.iLabel, { color: theme.textSecondary }]}>Address:</Text><Text style={[styles.iVal, { color: theme.text }]}>{selectedReg.permanent_address}</Text></View>
                 {selectedReg.category === 'employee' && (
-                  <View style={styles.infoRow}>
-                    <Text style={[styles.iLabel, { color: theme.textSecondary }]}>Decrypted PAN (Owner Only):</Text>
-                    <Text style={[styles.iVal, { color: Colors.primary, fontFamily: Typography.fontFamily.bold }]}>
-                      {decryptedPan || selectedReg.pan_encrypted || 'N/A'}
-                    </Text>
-                  </View>
+                  <>
+                    <View style={styles.infoRow}>
+                      <Text style={[styles.iLabel, { color: theme.textSecondary }]}>Decrypted PAN (Owner Only):</Text>
+                      <Text style={[styles.iVal, { color: theme.primary, fontFamily: Typography.fontFamily.bold }]}>
+                        {decryptedPan || panError || 'N/A'}
+                      </Text>
+                    </View>
+                    {!!panError && (
+                      <Text style={[styles.iHint, { color: theme.textSecondary }]}>
+                        Run migration 009_pan_decrypt_and_realtime.sql to enable PAN decryption.
+                      </Text>
+                    )}
+                  </>
                 )}
               </View>
 
@@ -250,5 +267,6 @@ const styles = StyleSheet.create({
   infoRow: { flexDirection: 'row', justifyContent: 'space-between' },
   iLabel: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs },
   iVal: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.xs, flex: 1, textAlign: 'right', marginLeft: Spacing.md },
+  iHint: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs, marginTop: Spacing.xs, textAlign: 'right' },
   modalBtns: { flexDirection: 'row', marginTop: Spacing.sm },
 });

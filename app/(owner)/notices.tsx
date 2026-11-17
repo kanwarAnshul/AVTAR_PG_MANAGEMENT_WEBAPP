@@ -119,7 +119,7 @@ export default function OwnerNoticesScreen() {
       <ScreenHeader title="Notices & Fines" subtitle="Publish to all tenants" />
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         <Card style={styles.card}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>NEW NOTICE</Text>
@@ -197,7 +197,7 @@ export default function OwnerNoticesScreen() {
                 />
               </View>
               {n.fine_amount ? (
-                <Text style={[styles.fineLine, { color: Colors.error }]}>
+                <Text style={[styles.fineLine, { color: theme.error }]}>
                   Fine: {formatCurrency(n.fine_amount)}{n.damaged_item ? ` · ${n.damaged_item}` : ''}
                 </Text>
               ) : null}

@@ -251,7 +251,7 @@ export default function StudentRegisterScreen() {
               </Text>
 
               {/* Photo */}
-              <Text style={[styles.docLabel, { color: theme.text }]}>Passport Photo <Text style={{ color: Colors.error }}>*</Text></Text>
+              <Text style={[styles.docLabel, { color: theme.text }]}>Passport Photo <Text style={{ color: theme.error }}>*</Text></Text>
               <TouchableOpacity onPress={() => pickImage('photo')} style={[styles.docPicker, { borderColor: photo.uri ? Colors.success : theme.border, backgroundColor: theme.surfaceAlt }]}>
                 {photo.uri ? (
                   <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
@@ -265,7 +265,7 @@ export default function StudentRegisterScreen() {
               </TouchableOpacity>
 
               {/* Address Proof Type */}
-              <Text style={[styles.docLabel, { color: theme.text }]}>Address Proof Type <Text style={{ color: Colors.error }}>*</Text></Text>
+              <Text style={[styles.docLabel, { color: theme.text }]}>Address Proof Type <Text style={{ color: theme.error }}>*</Text></Text>
               <View style={styles.proofTypes}>
                 {ADDRESS_PROOF_TYPES.map((type) => (
                   <TouchableOpacity
@@ -287,7 +287,7 @@ export default function StudentRegisterScreen() {
               </View>
 
               {/* Address Proof Image */}
-              <Text style={[styles.docLabel, { color: theme.text }]}>Address Proof Image <Text style={{ color: Colors.error }}>*</Text></Text>
+              <Text style={[styles.docLabel, { color: theme.text }]}>Address Proof Image <Text style={{ color: theme.error }}>*</Text></Text>
               <TouchableOpacity onPress={() => pickImage('addressProof')} style={[styles.docPicker, { borderColor: addressProof.uri ? Colors.success : theme.border, backgroundColor: theme.surfaceAlt }]}>
                 {addressProof.uri ? (
                   <Image source={{ uri: addressProof.uri }} style={styles.docPreview} />
@@ -302,7 +302,7 @@ export default function StudentRegisterScreen() {
 
               {formError ? (
                 <View style={[styles.errorBox, { backgroundColor: Colors.error + '15', borderColor: Colors.error + '40' }]}>
-                  <Text style={[styles.errorText, { color: Colors.error }]}>⚠️ {formError}</Text>
+                  <Text style={[styles.errorText, { color: theme.error }]}>⚠️ {formError}</Text>
                 </View>
               ) : null}
 

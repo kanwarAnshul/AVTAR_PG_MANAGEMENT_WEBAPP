@@ -227,7 +227,7 @@ export default function OwnerSettingsScreen() {
                 <Text style={[styles.prefTitle, { color: theme.text }]}>{row.icon} {row.title}</Text>
                 <Text style={[styles.prefSub, { color: theme.textSecondary }]}>{row.sub}</Text>
               </View>
-              <Text style={{ fontSize: 18, color: Colors.primary }}>›</Text>
+              <Text style={{ fontSize: 18, color: theme.primary }}>›</Text>
             </TouchableOpacity>
           ))}
         </Card>
@@ -378,7 +378,7 @@ export default function OwnerSettingsScreen() {
                 View / update PG timings & gate pass policies
               </Text>
             </View>
-            <Text style={{ fontSize: 18, color: Colors.primary }}>›</Text>
+            <Text style={{ fontSize: 18, color: theme.primary }}>›</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -386,12 +386,12 @@ export default function OwnerSettingsScreen() {
             onPress={() => setLogoutModalVisible(true)}
           >
             <View>
-              <Text style={[styles.prefTitle, { color: Colors.error }]}>Log Out Super Admin</Text>
+              <Text style={[styles.prefTitle, { color: theme.error }]}>Log Out Super Admin</Text>
               <Text style={[styles.prefSub, { color: theme.textSecondary }]}>
                 Sign out of this administrative device
               </Text>
             </View>
-            <Text style={{ fontSize: 18, color: Colors.error }}>🚪</Text>
+            <Text style={{ fontSize: 18, color: theme.error }}>🚪</Text>
           </TouchableOpacity>
         </Card>
       </ScrollView>

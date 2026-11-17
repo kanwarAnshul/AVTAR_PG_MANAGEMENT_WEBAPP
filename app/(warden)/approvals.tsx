@@ -215,7 +215,7 @@ export default function WardenApprovalsScreen() {
 
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         {filtered.length === 0 ? (
           <EmptyState
@@ -244,8 +244,8 @@ export default function WardenApprovalsScreen() {
                       label={reg.category}
                       color={
                         reg.category === 'student'
-                          ? { bg: '#DBEAFE', text: '#1E40AF' }
-                          : { bg: '#F3E8FF', text: '#6B21A8' }
+                          ? { bg: '#E8EDD4', text: '#3F4C1C' }
+                          : { bg: '#FBEEDA', text: '#8A5A12' }
                       }
                       size="sm"
                     />
@@ -253,7 +253,7 @@ export default function WardenApprovalsScreen() {
                   </View>
                 </View>
                 <View style={[styles.cardFooter, { borderTopColor: theme.border }]}>
-                  <Text style={[styles.viewDocs, { color: Colors.primary }]}>
+                  <Text style={[styles.viewDocs, { color: theme.primary }]}>
                     View KYC Documents & Review →
                   </Text>
                 </View>
@@ -283,8 +283,8 @@ export default function WardenApprovalsScreen() {
                     label={selectedReg.category}
                     color={
                       selectedReg.category === 'student'
-                        ? { bg: '#DBEAFE', text: '#1E40AF' }
-                        : { bg: '#F3E8FF', text: '#6B21A8' }
+                        ? { bg: '#E8EDD4', text: '#3F4C1C' }
+                        : { bg: '#FBEEDA', text: '#8A5A12' }
                     }
                   />
                 </View>
@@ -300,7 +300,7 @@ export default function WardenApprovalsScreen() {
                     <View style={styles.detailRow}><Text style={[styles.dLabel, { color: theme.textSecondary }]}>Company</Text><Text style={[styles.dVal, { color: theme.text }]}>{selectedReg.company_name}</Text></View>
                     <View style={styles.detailRow}><Text style={[styles.dLabel, { color: theme.textSecondary }]}>Employee ID</Text><Text style={[styles.dVal, { color: theme.text }]}>{selectedReg.employee_id}</Text></View>
                     <View style={styles.detailRow}><Text style={[styles.dLabel, { color: theme.textSecondary }]}>Work Email</Text><Text style={[styles.dVal, { color: theme.text }]}>{selectedReg.work_email}</Text></View>
-                    <View style={styles.detailRow}><Text style={[styles.dLabel, { color: theme.textSecondary }]}>PAN (Encrypted)</Text><Text style={[styles.dVal, { color: Colors.primary }]}>•••••••••• (Owner Viewable)</Text></View>
+                    <View style={styles.detailRow}><Text style={[styles.dLabel, { color: theme.textSecondary }]}>PAN (Encrypted)</Text><Text style={[styles.dVal, { color: theme.primary }]}>•••••••••• (Owner Viewable)</Text></View>
                   </>
                 )}
 
@@ -372,7 +372,7 @@ export default function WardenApprovalsScreen() {
       <Modal visible={rejectModalVisible} transparent animationType="fade">
         <View style={[styles.rejectOverlay, { backgroundColor: theme.overlay }]}>
           <View style={[styles.rejectContent, { backgroundColor: theme.card }]}>
-            <Text style={[styles.rejectTitle, { color: Colors.error }]}>Reject Registration</Text>
+            <Text style={[styles.rejectTitle, { color: theme.error }]}>Reject Registration</Text>
             <Text style={[styles.rejectSub, { color: theme.textSecondary }]}>
               Please provide a clear reason. The tenant will receive this message and can resubmit documents.
             </Text>

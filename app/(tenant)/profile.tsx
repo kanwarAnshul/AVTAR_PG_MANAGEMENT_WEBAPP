@@ -110,8 +110,8 @@ export default function TenantProfileScreen() {
                   status={tenantInfo?.category}
                   color={
                     tenantInfo?.category === 'student'
-                      ? { bg: '#DBEAFE', text: '#1E40AF' }
-                      : { bg: '#F3E8FF', text: '#6B21A8' }
+                      ? { bg: '#E8EDD4', text: '#3F4C1C' }
+                      : { bg: '#FBEEDA', text: '#8A5A12' }
                   }
                   size="sm"
                 />
@@ -218,7 +218,7 @@ export default function TenantProfileScreen() {
                 How your data is handled
               </Text>
             </View>
-            <Text style={{ fontSize: 18, color: Colors.primary }}>›</Text>
+            <Text style={{ fontSize: 18, color: theme.primary }}>›</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -226,12 +226,12 @@ export default function TenantProfileScreen() {
             onPress={() => setCheckoutModalVisible(true)}
           >
             <View>
-              <Text style={[styles.prefTitle, { color: Colors.warning }]}>Initiate Checkout</Text>
+              <Text style={[styles.prefTitle, { color: theme.warning }]}>Initiate Checkout</Text>
               <Text style={[styles.prefSub, { color: theme.textSecondary }]}>
                 Request move-out & deposit settlement
               </Text>
             </View>
-            <Text style={{ fontSize: 18, color: Colors.warning }}>→</Text>
+            <Text style={{ fontSize: 18, color: theme.warning }}>→</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -239,12 +239,12 @@ export default function TenantProfileScreen() {
             onPress={() => setLogoutModalVisible(true)}
           >
             <View>
-              <Text style={[styles.prefTitle, { color: Colors.error }]}>Log Out</Text>
+              <Text style={[styles.prefTitle, { color: theme.error }]}>Log Out</Text>
               <Text style={[styles.prefSub, { color: theme.textSecondary }]}>
                 Sign out of this device
               </Text>
             </View>
-            <Text style={{ fontSize: 18, color: Colors.error }}>🚪</Text>
+            <Text style={{ fontSize: 18, color: theme.error }}>🚪</Text>
           </TouchableOpacity>
         </Card>
       </ScrollView>

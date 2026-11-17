@@ -221,7 +221,7 @@ export default function OwnerRoomsScreen() {
       />
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         {properties.length === 0 ? (
           <EmptyState
@@ -249,7 +249,7 @@ export default function OwnerRoomsScreen() {
                     Floor {room.floor} · {room.sharing_type} sharing · {bedsByRoom(room.id)} beds
                     {room.location ? ` · 📍 ${room.location}` : ''}
                   </Text>
-                  <Text style={[styles.meta, { color: Colors.primary }]}>
+                  <Text style={[styles.meta, { color: theme.primary }]}>
                     {formatCurrency(room.monthly_rent)}/mo · Deposit {formatCurrency(room.deposit_amt || 0)}
                   </Text>
                 </View>

@@ -67,16 +67,16 @@ export default function WardenPresenceScreen() {
       />
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         <View style={styles.statsRow}>
-          <Card style={[styles.stat, { backgroundColor: '#F0FDF4' }]}>
-            <Text style={[styles.statNum, { color: '#166534' }]}>{presentCount} 🟢</Text>
-            <Text style={[styles.statLabel, { color: '#166534' }]}>Present</Text>
+          <Card style={[styles.stat, { backgroundColor: isDark ? '#1E2A1C' : '#F0FDF4' }]}>
+            <Text style={[styles.statNum, { color: isDark ? '#7FB85C' : '#3D6B2A' }]}>{presentCount} 🟢</Text>
+            <Text style={[styles.statLabel, { color: isDark ? '#7FB85C' : '#3D6B2A' }]}>Present</Text>
           </Card>
-          <Card style={[styles.stat, { backgroundColor: '#FEF2F2' }]}>
-            <Text style={[styles.statNum, { color: '#991B1B' }]}>{absentCount} 🔴</Text>
-            <Text style={[styles.statLabel, { color: '#991B1B' }]}>Not Present</Text>
+          <Card style={[styles.stat, { backgroundColor: isDark ? '#2A1B19' : '#FEF2F2' }]}>
+            <Text style={[styles.statNum, { color: isDark ? '#E07066' : '#9B2C22' }]}>{absentCount} 🔴</Text>
+            <Text style={[styles.statLabel, { color: isDark ? '#E07066' : '#9B2C22' }]}>Not Present</Text>
           </Card>
           <Card style={[styles.stat, { backgroundColor: theme.surfaceAlt }]}>
             <Text style={[styles.statNum, { color: theme.text }]}>{unmarked} ⚪</Text>

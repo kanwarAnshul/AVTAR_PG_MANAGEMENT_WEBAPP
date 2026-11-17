@@ -101,7 +101,7 @@ export default function WardenRequestsScreen() {
       <ScreenHeader title="Tenant Requests" subtitle="Review amenity & requirement requests" />
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         <Text style={[styles.heading, { color: theme.text }]}>PENDING ({pending.length})</Text>
         {pending.length === 0 ? (

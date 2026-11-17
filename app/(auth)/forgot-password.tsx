@@ -192,7 +192,7 @@ export default function ForgotPasswordScreen() {
 
               {error ? (
                 <View style={[styles.errorBox, { backgroundColor: Colors.error + '15', borderColor: Colors.error + '40' }]}>
-                  <Text style={[styles.errorText, { color: Colors.error }]}>⚠️ {error}</Text>
+                  <Text style={[styles.errorText, { color: theme.error }]}>⚠️ {error}</Text>
                 </View>
               ) : null}
 
@@ -235,7 +235,7 @@ export default function ForgotPasswordScreen() {
               >
                 <Text style={[styles.linkText, { color: theme.textSecondary }]}>
                   Remembered it?{' '}
-                  <Text style={{ color: Colors.primary, fontFamily: Typography.fontFamily.semiBold }}>
+                  <Text style={{ color: theme.primary, fontFamily: Typography.fontFamily.semiBold }}>
                     Sign in
                   </Text>
                 </Text>
@@ -289,7 +289,7 @@ export default function ForgotPasswordScreen() {
 
               {error ? (
                 <View style={[styles.errorBox, { backgroundColor: Colors.error + '15', borderColor: Colors.error + '40' }]}>
-                  <Text style={[styles.errorText, { color: Colors.error }]}>⚠️ {error}</Text>
+                  <Text style={[styles.errorText, { color: theme.error }]}>⚠️ {error}</Text>
                 </View>
               ) : null}
 

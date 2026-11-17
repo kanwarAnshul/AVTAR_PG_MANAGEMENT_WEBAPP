@@ -183,7 +183,7 @@ export default function OwnerWardensScreen() {
 
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         {memberships.length === 0 ? (
           <EmptyState
@@ -206,7 +206,7 @@ export default function OwnerWardensScreen() {
                   <Text style={[styles.email, { color: theme.textSecondary }]}>
                     {m.warden?.email} {m.warden?.phone ? `· ${m.warden.phone}` : ''}
                   </Text>
-                  <Text style={[styles.prop, { color: Colors.primary }]}>
+                  <Text style={[styles.prop, { color: theme.primary }]}>
                     📍 Assigned: {m.property?.name || 'Main Property'}
                   </Text>
                 </View>
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   scroll: { padding: Spacing.base, paddingBottom: Spacing['3xl'] },
   card: { marginBottom: Spacing.md, padding: Spacing.base },
   cardTop: { flexDirection: 'row', alignItems: 'center' },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#EFF6FF', justifyContent: 'center', alignItems: 'center' },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#E8EDD4', justifyContent: 'center', alignItems: 'center' },
   name: { fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.base },
   email: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs, marginTop: 2 },
   prop: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.xs, marginTop: 4 },

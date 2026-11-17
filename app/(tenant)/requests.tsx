@@ -90,7 +90,7 @@ export default function TenantRequestsScreen() {
       <ScreenHeader title="My Requests" subtitle="Ask the warden for property requirements" />
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         <Card style={styles.card}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>NEW REQUIREMENT REQUEST</Text>

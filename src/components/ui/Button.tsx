@@ -46,13 +46,15 @@ export const Button: React.FC<ButtonProps> = ({
   const getVariantStyles = (): { bg: string; text: string; border?: string } => {
     switch (variant) {
       case 'primary':
+        // Fill colour: white text sits on it (7.08:1)
         return { bg: Colors.primary, text: '#FFFFFF' };
       case 'secondary':
         return { bg: isDark ? Colors.dark.surfaceAlt : Colors.light.surfaceAlt, text: theme.text };
       case 'outline':
-        return { bg: 'transparent', text: Colors.primary, border: Colors.primary };
+        // Text/border on the screen background -> use the theme-aware tone
+        return { bg: 'transparent', text: theme.primary, border: theme.primary };
       case 'ghost':
-        return { bg: 'transparent', text: Colors.primary };
+        return { bg: 'transparent', text: theme.primary };
       case 'danger':
         return { bg: Colors.error, text: '#FFFFFF' };
       case 'success':

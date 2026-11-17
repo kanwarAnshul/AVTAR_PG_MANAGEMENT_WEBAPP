@@ -93,11 +93,11 @@ export default function TenantHomeScreen() {
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         {/* Bed Card */}
         {tenancy ? (
-          <View style={[styles.bedCard, { backgroundColor: isDark ? '#1E293B' : Colors.primary }]}>
+          <View style={[styles.bedCard, { backgroundColor: isDark ? '#1E2417' : Colors.primary }]}>
             <View style={styles.bedCardTop}>
               <View>
                 <Text style={styles.bedCardLabel}>YOUR BED</Text>
@@ -109,8 +109,8 @@ export default function TenantHomeScreen() {
                 label={tenant?.category ?? 'tenant'}
                 status={tenant?.category}
                 color={tenant?.category === 'student'
-                  ? { bg: '#DBEAFE', text: '#1E40AF' }
-                  : { bg: '#F3E8FF', text: '#6B21A8' }
+                  ? { bg: '#E8EDD4', text: '#3F4C1C' }
+                  : { bg: '#FBEEDA', text: '#8A5A12' }
                 }
               />
             </View>
@@ -169,7 +169,7 @@ export default function TenantHomeScreen() {
           <Card variant="outlined" style={{ borderColor: Colors.error + '40' }}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: theme.text }]}>💰 Pending Dues</Text>
-              <Text style={[styles.totalDue, { color: Colors.error }]}>{formatCurrency(totalDue)}</Text>
+              <Text style={[styles.totalDue, { color: theme.error }]}>{formatCurrency(totalDue)}</Text>
             </View>
             {pendingInvoices.map((inv: any) => (
               <TouchableOpacity
@@ -184,13 +184,13 @@ export default function TenantHomeScreen() {
                   </Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={[styles.dueAmount, { color: Colors.error }]}>{formatCurrency(inv.balance_due)}</Text>
+                  <Text style={[styles.dueAmount, { color: theme.error }]}>{formatCurrency(inv.balance_due)}</Text>
                   <Badge label={inv.status} size="sm" />
                 </View>
               </TouchableOpacity>
             ))}
             <TouchableOpacity onPress={() => router.push('/(tenant)/rent')}>
-              <Text style={[styles.viewAll, { color: Colors.primary }]}>View all invoices →</Text>
+              <Text style={[styles.viewAll, { color: theme.primary }]}>View all invoices →</Text>
             </TouchableOpacity>
           </Card>
         )}
@@ -209,7 +209,7 @@ export default function TenantHomeScreen() {
               </View>
             ))}
             <TouchableOpacity onPress={() => router.push('/(tenant)/complaints')}>
-              <Text style={[styles.viewAll, { color: Colors.primary }]}>View all →</Text>
+              <Text style={[styles.viewAll, { color: theme.primary }]}>View all →</Text>
             </TouchableOpacity>
           </Card>
         )}
@@ -230,7 +230,7 @@ export default function TenantHomeScreen() {
               </View>
             ))}
             <TouchableOpacity onPress={() => router.push('/(tenant)/notices')}>
-              <Text style={[styles.viewAll, { color: Colors.primary }]}>View all →</Text>
+              <Text style={[styles.viewAll, { color: theme.primary }]}>View all →</Text>
             </TouchableOpacity>
           </Card>
         )}

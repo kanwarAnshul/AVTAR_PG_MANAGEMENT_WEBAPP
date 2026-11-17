@@ -19,6 +19,8 @@ const CATEGORIES = [
     icon: '🎓',
     title: 'Student',
     subtitle: 'College / School Student',
+    // Fill colour (used at low alpha for borders/backgrounds); the
+    // arrow glyph below uses the theme-aware text variant instead.
     color: Colors.info,
     description: 'College name, Roll no., Address proof, Family contact',
   },
@@ -86,7 +88,7 @@ export default function CategoryScreen() {
                 </Text>
               </View>
               <View style={[styles.arrow, { backgroundColor: cat.color + '20' }]}>
-                <Text style={{ color: cat.color, fontSize: 18 }}>›</Text>
+                <Text style={{ color: cat.value === 'student' ? theme.info : theme.primary, fontSize: 18 }}>›</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -103,7 +105,7 @@ export default function CategoryScreen() {
         <TouchableOpacity onPress={() => router.push('/(auth)/login')} style={styles.loginLink}>
           <Text style={[styles.loginText, { color: theme.textSecondary }]}>
             Already registered?{' '}
-            <Text style={{ color: Colors.primary, fontFamily: Typography.fontFamily.semiBold }}>
+            <Text style={{ color: theme.primary, fontFamily: Typography.fontFamily.semiBold }}>
               Login here
             </Text>
           </Text>

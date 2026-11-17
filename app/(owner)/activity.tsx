@@ -54,7 +54,7 @@ export default function OwnerActivityScreen() {
       <ScreenHeader title="Warden Activity" subtitle="Audit trail — is the warden working properly?" />
       <ScrollView
         contentContainerStyle={styles.scroll}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { refetch(); }} tintColor={theme.primary} />}
       >
         {data.length === 0 ? (
           <EmptyState

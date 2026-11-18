@@ -163,7 +163,9 @@ export default function OwnerSettingsScreen() {
     { title: 'My Profile', sub: 'Edit email info, phone, password & photo', icon: '👤', href: '/(owner)/profile' },
     { title: 'Rooms & Inventory', sub: 'Add rooms, photos, BHK & rent charges', icon: '🏠', href: '/(owner)/rooms' },
     { title: 'Notices & Fines', sub: 'Fine notices for damaged property', icon: '💸', href: '/(owner)/notices' },
-    { title: 'Privacy Policy', sub: 'Edit tenant-visible policy', icon: '📜', href: '/(owner)/privacy' },
+    { title: 'Privacy Policy', sub: 'Write or template the tenant-visible policy', icon: '📜', href: '/(owner)/privacy' },
+    { title: 'Terms & Conditions', sub: 'Author terms + optional tenant login gate', icon: '🧾', href: '/(owner)/terms' },
+    { title: 'Former Tenants', sub: 'Past tenants: contact, family & feedback', icon: '🗂️', href: '/(owner)/former-tenants' },
     { title: 'Warden Activity', sub: 'Audit checks on warden work', icon: '👁️', href: '/(owner)/activity' },
   ];
 

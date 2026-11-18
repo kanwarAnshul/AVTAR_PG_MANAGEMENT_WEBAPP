@@ -163,3 +163,94 @@ export const savePrivacyPolicy = async (text: string, updatedBy?: string): Promi
   );
   if (error) throw new Error(friendlyDbError(error));
 };
+
+// ── Terms & Conditions (separate section from the privacy policy) ──
+export const DEFAULT_TERMS = `AVTAR Singh PG — Terms & Conditions (v1.0)
+
+These terms apply to every tenant staying at AVTAR Singh PG. By accepting them you agree to the following:
+
+1. REGISTRATION — Every tenant must complete one-time registration with valid ID proof and contact details before move-in. Details must be kept up to date.
+
+2. RENT & PAYMENTS — Rent is due on the due day shown in the app each month. Late payment may attract a fine. Payments are recorded in the app; ask the office for a receipt.
+
+3. DEPOSIT — A security deposit is collected at move-in and adjusted against damages, unpaid dues or missing items at checkout.
+
+4. CONDUCT — No loud music after 10 PM, no smoking or alcohol inside rooms, and no guests overnight without prior permission from the warden.
+
+5. ROOM & BED — The allotted room and bed may not be changed or shared without written approval from the owner.
+
+6. DOCUMENTS — KYC documents uploaded in the app are used only for verification. They are deleted when your tenancy is completed at checkout.
+
+7. CHECKOUT — Checkout requires submitting a request in the app with date, time and feedback. On owner approval all your personal documents and records are permanently deleted from the app and archived as a former tenant.
+
+8. LIABILITY — The management is not responsible for loss of personal valuables. Use the provided lockers and inform the warden of any security concern.
+
+9. TERMINATION — The owner may ask a tenant to vacate for rule violations, with reasonable notice.
+
+10. CHANGES — The owner may update these terms; you will be asked to accept the updated version at your next login.
+
+Contact: avtar.singh@avtarpg.com · Gurgaon, Haryana.`;
+
+/** Terms text. Returns '' when the owner has not published any. */
+export const fetchTerms = async (): Promise<string> => {
+  if (!isSupabaseConfigured) return '';
+  try {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'terms_conditions')
+      .maybeSingle();
+    return (data as any)?.value ?? '';
+  } catch {
+    return '';
+  }
+};
+
+export const saveTerms = async (text: string, updatedBy?: string): Promise<void> => {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from('app_settings').upsert(
+    { key: 'terms_conditions', value: text, updated_by: updatedBy ?? null, updated_at: new Date().toISOString() },
+    { onConflict: 'key' }
+  );
+  if (error) throw new Error(friendlyDbError(error));
+};
+
+/** updated_at of the terms text — used to re-prompt after the owner edits it. */
+export const fetchTermsUpdatedAt = async (): Promise<string | null> => {
+  if (!isSupabaseConfigured) return null;
+  try {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('updated_at')
+      .eq('key', 'terms_conditions')
+      .maybeSingle();
+    return (data as any)?.updated_at ?? null;
+  } catch {
+    return null;
+  }
+};
+
+/** Login gate switch. Defaults to ON when the setting is missing. */
+export const fetchTermsGateEnabled = async (): Promise<boolean> => {
+  if (!isSupabaseConfigured) return false;
+  try {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'terms_gate_enabled')
+      .maybeSingle();
+    if (!data) return false;
+    return (data as any).value === 'true';
+  } catch {
+    return false; // never block login on a network blip
+  }
+};
+
+export const saveTermsGateEnabled = async (enabled: boolean, updatedBy?: string): Promise<void> => {
+  if (!isSupabaseConfigured) return;
+  const { error } = await supabase.from('app_settings').upsert(
+    { key: 'terms_gate_enabled', value: enabled ? 'true' : 'false', updated_by: updatedBy ?? null, updated_at: new Date().toISOString() },
+    { onConflict: 'key' }
+  );
+  if (error) throw new Error(friendlyDbError(error));
+};

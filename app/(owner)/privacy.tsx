@@ -55,16 +55,35 @@ export default function OwnerPrivacyScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         <Card style={styles.card}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>CURRENT POLICY</Text>
+          <Text style={[styles.hint, { color: theme.textSecondary }]}>
+            Write it yourself, or start from the template and edit it. Tenants and wardens read it
+            under Profile → Privacy Policy.
+          </Text>
           <Input
             label="Policy Text"
             value={text}
             onChangeText={setText}
             multiline
             numberOfLines={14}
-            style={{ minHeight: 220 }}
+            style={{ minHeight: 220, textAlignVertical: 'top' }}
             placeholder="Type the privacy policy tenants will see"
           />
           <View style={styles.btnRow}>
+            <Button
+              title="Insert Template"
+              variant="outline"
+              onPress={() =>
+                Alert.alert(
+                  'Insert Template?',
+                  'This replaces the current text with a standard privacy policy template you can then edit.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Insert', onPress: () => setText(DEFAULT_PRIVACY_POLICY) },
+                  ]
+                )
+              }
+              style={{ flex: 1, marginRight: Spacing.sm }}
+            />
             <Button
               title="Reset to Default"
               variant="secondary"
@@ -96,6 +115,12 @@ const styles = StyleSheet.create({
   scroll: { padding: Spacing.base, paddingBottom: Spacing['3xl'] },
   card: { padding: Spacing.base, marginBottom: Spacing.base },
   sectionTitle: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.xs, letterSpacing: 1, marginBottom: Spacing.sm },
+  hint: {
+    fontFamily: Typography.fontFamily.regular,
+    fontSize: Typography.size.xs,
+    lineHeight: 18,
+    marginBottom: Spacing.sm,
+  },
   btnRow: { flexDirection: 'row', marginTop: Spacing.sm },
   preview: { borderWidth: 1, borderRadius: 10, padding: Spacing.md },
   previewText: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.sm, lineHeight: 22 },

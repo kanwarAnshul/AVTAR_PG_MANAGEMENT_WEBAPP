@@ -55,9 +55,19 @@ export default function LoginScreen() {
       if (authData.user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, is_active')
           .eq('id', authData.user.id)
           .single();
+
+        // Account closed by an approved checkout (its personal data and
+        // documents were deleted; see migration 010 decide_checkout()).
+        if (profile && profile.is_active === false) {
+          await supabase.auth.signOut();
+          setLoginError(
+            'This account was closed at checkout and its data has been deleted. Contact the PG office to register again.'
+          );
+          return;
+        }
 
         if (profile?.role === 'tenant') {
           const { data: reg } = await supabase

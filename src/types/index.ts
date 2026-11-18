@@ -29,6 +29,8 @@ export interface Profile {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  /** Set when the tenant accepts Terms & Conditions (migration 010). */
+  terms_accepted_at?: string | null;
 }
 
 export interface Property {
@@ -279,6 +281,54 @@ export interface TenantRequest {
   created_at: string;
   updated_at: string;
   tenant?: Tenant;
+}
+
+// Tenant checkout request — form (date + time + feedback) that the
+// owner approves. Migration 010.
+export type CheckoutStatus = 'pending' | 'approved' | 'rejected';
+
+export interface CheckoutRequest {
+  id: string;
+  tenant_id: string | null;
+  property_id: string;
+  tenant_name: string;
+  room_label?: string;
+  bed_label?: string;
+  check_out_date: string; // YYYY-MM-DD
+  check_out_time: string; // HH:MM
+  feedback: string;
+  status: CheckoutStatus;
+  decision_reason?: string;
+  reviewer_id?: string;
+  decided_at?: string;
+  created_at: string;
+  updated_at: string;
+  /** Present while the tenant still exists (null after purge). */
+  tenant?: { user_id: string; registration_id: string } | null;
+}
+
+// Archived past tenant (owner-only). Migration 010.
+export interface FormerTenant {
+  id: string;
+  property_id: string;
+  source_tenant_id?: string;
+  full_name: string;
+  phone?: string;
+  emergency_phone?: string;
+  email?: string;
+  permanent_address?: string;
+  current_address?: string;
+  family_contact_name?: string;
+  family_contact_phone?: string;
+  family_relation?: string;
+  category?: string;
+  room_no?: string;
+  bed_label?: string;
+  check_in_date?: string;
+  check_out_date?: string;
+  check_out_time?: string;
+  feedback: string;
+  archived_at: string;
 }
 
 // Daily presence marking (migration 003)

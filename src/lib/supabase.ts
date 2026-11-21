@@ -1,3 +1,5 @@
+import 'expo-sqlite/localStorage/install';
+import { AppState } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 
@@ -32,6 +34,7 @@ export const supabase = createClient(
   isSupabaseConfigured ? (configuredAnonKey as string) : 'placeholder',
   {
     auth: {
+      storage: localStorage,
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
@@ -49,6 +52,15 @@ export const supabase = createClient(
     },
   }
 );
+
+// Keep the refresh loop tied to foreground/background on mobile.
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') {
+    supabase.auth.startAutoRefresh();
+  } else {
+    supabase.auth.stopAutoRefresh();
+  }
+});
 
 // Isolated client factory.
 // Used when the owner creates another account (warden) from inside the app:

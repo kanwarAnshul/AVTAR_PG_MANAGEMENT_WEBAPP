@@ -64,7 +64,8 @@
         }
       ],
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      "expo-sqlite"
     ],
     "scheme": "avtarpg",
     "extra": {

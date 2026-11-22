@@ -15,6 +15,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { supabase } from '../../src/lib/supabase';
+import { useAuthStore } from '../../src/stores/authStore';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/constants/theme';
 import { useThemeStore } from '../../src/stores/themeStore';
 import { Button } from '../../src/components/ui/Button';
@@ -29,6 +30,7 @@ type FormData = z.infer<typeof schema>;
 
 export default function LoginScreen() {
   const { isDark } = useThemeStore();
+  const { setSession, refreshProfile } = useAuthStore();
   const theme = isDark ? Colors.dark : Colors.light;
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
@@ -91,7 +93,15 @@ export default function LoginScreen() {
           }
         }
       }
-      // Navigation happens via auth state change → index.tsx
+
+      // index.tsx owns the role redirect, but it is not mounted while this
+      // screen is visible. Publish the session to the store and navigate to
+      // it explicitly so the user reaches their portal immediately.
+      if (authData.session) {
+        setSession(authData.session);
+        await refreshProfile();
+      }
+      router.replace('/');
     } catch (err: any) {
       setLoginError('Something went wrong. Please try again.');
     } finally {

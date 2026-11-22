@@ -22,8 +22,9 @@ The delivered APK is **not** Play Store ready: the debug certificate cannot be u
 ## iOS — status
 
 - The source is configured for iOS (bundle id `com.avtarsingh.pgmanager`, info.plist camera/photo permissions, EAS profiles in `eas.json`).
-- A **cloud simulator build** is the strongest verification possible from this Windows machine; it proves the iOS native project and JS bundle compile.
-- A production `.ipa`, TestFlight rollout and hands-on iPhone testing require an **Apple Developer Program account** and either a Mac/Xcode or EAS cloud signing plus TestFlight testers.
+- A **cloud simulator build succeeded** on 22 Nov 2026 — EAS build id `99ce2195-f75f-4d38-8c4e-e74f901f2865` (profile `simulator`). It proves the iOS native project and JS bundle compile and package.
+- The simulator artifact can only run in Xcode's iOS Simulator on a Mac. It is **not** an installable iPhone build.
+- A production `.ipa`, TestFlight rollout and hands-on iPhone testing require an **Apple Developer Program account** and either a Mac/Xcode or EAS cloud signing plus TestFlight testers. `app.json` now declares `ITSAppUsesNonExemptEncryption: false` to avoid an App Store Connect questionnaire at submission.
 
 ## Verification record
 

@@ -21,7 +21,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Required to upload tenant photos and complaint images",
         "NSPhotoLibraryUsageDescription": "Required to upload documents and photos",
-        "NSMicrophoneUsageDescription": "Not used"
+        "NSMicrophoneUsageDescription": "Not used",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

@@ -7,41 +7,36 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { requestPasswordOtp, resetPasswordWithOtp, sendPasswordResetEmail } from '../../src/lib/supabase';
+import { sendPasswordResetEmail } from '../../src/lib/supabase';
 import { friendlyDbError } from '../../src/utils/helpers';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/constants/theme';
 import { useThemeStore } from '../../src/stores/themeStore';
 import { Button } from '../../src/components/ui/Button';
 import { Input } from '../../src/components/ui/Input';
 
-type Step = 'identify' | 'reset';
-
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
-const PHONE_RE = /^[6-9]\d{9}$/;
 
+/**
+ * Password recovery is EMAIL ONLY. The owner enters the email address on the
+ * account and Supabase sends a secure one-time recovery link. Opening that
+ * link on this device signs the user in temporarily and routes them to the
+ * reset-password screen where they choose a new password. No SMS provider,
+ * phone number or OTP is involved in the mobile flow.
+ */
 export default function ForgotPasswordScreen() {
   const { isDark } = useThemeStore();
   const theme = isDark ? Colors.dark : Colors.light;
 
-  const [step, setStep] = useState<Step>('identify');
-  const [identifier, setIdentifier] = useState('');
-  const [resolvedIdentifier, setResolvedIdentifier] = useState('');
-  const [maskedPhone, setMaskedPhone] = useState('');
-  const [devOtp, setDevOtp] = useState<string | null>(null);
-  const [otp, setOtp] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
+  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
-  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [sentTo, setSentTo] = useState('');
   const [cooldown, setCooldown] = useState(0);
-  const [emailSent, setEmailSent] = useState(false);
-  const [emailSending, setEmailSending] = useState(false);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -49,105 +44,24 @@ export default function ForgotPasswordScreen() {
     return () => clearTimeout(timer);
   }, [cooldown]);
 
-  const cleanIdentifier = (raw: string) => {
-    const trimmed = raw.trim();
-    if (EMAIL_RE.test(trimmed)) return trimmed.toLowerCase();
-    const digits = trimmed.replace(/\D/g, '').slice(-10);
-    if (PHONE_RE.test(digits)) return digits;
-    return null;
-  };
-
-  const sendOtp = async () => {
-    const value = cleanIdentifier(identifier);
-    if (!value) {
-      setError('Enter the email address or 10-digit mobile number linked to your account.');
+  const sendLink = async () => {
+    const clean = email.trim().toLowerCase();
+    if (!EMAIL_RE.test(clean)) {
+      setError('Enter the email address linked to your account.');
       return;
     }
 
     setLoading(true);
     setError('');
-    setInfo('');
     try {
-      const result = await requestPasswordOtp(value);
+      const result = await sendPasswordResetEmail(clean, Linking.createURL('/reset-password'));
       if (!result.ok) {
-        // A number that is not on any account is the most common case
-        // (accounts created before migration 006 never stored the phone).
-        // Point the user at the two things that actually fix it.
-        const isPhone = !value.includes('@');
-        const base = result.error ?? 'Could not send the OTP. Please try again.';
-        setError(
-          isPhone && base.includes('No account was found')
-            ? `${base} Try your email address instead, or open Profile and check the mobile number saved on your account.`
-            : base
-        );
+        setError(result.error ?? 'Could not send the recovery email. Please try again.');
         return;
       }
-
-      setResolvedIdentifier(value);
-      setMaskedPhone(result.phone ?? '');
-      setDevOtp(result.delivery === 'demo' ? result.dev_otp ?? null : null);
-      setInfo(result.message ?? 'OTP sent.');
-      setStep('reset');
+      setSentTo(clean);
+      setSent(true);
       setCooldown(45);
-    } catch (err) {
-      setError(friendlyDbError(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Email channel — no SMS vendor needed. Supabase sends a recovery
-  // link that opens the app through the avtarpg:// scheme.
-  const sendEmailLink = async () => {
-    const value = cleanIdentifier(identifier);
-    if (!value || !value.includes('@')) {
-      setError('Enter the email address on your account to get a reset link.');
-      return;
-    }
-
-    setEmailSending(true);
-    setError('');
-    setInfo('');
-    try {
-      const result = await sendPasswordResetEmail(value, Linking.createURL('/reset-password'));
-      if (!result.ok) {
-        setError(result.error ?? 'Could not send the email. Please try again.');
-        return;
-      }
-      setEmailSent(true);
-    } catch (err) {
-      setError(friendlyDbError(err));
-    } finally {
-      setEmailSending(false);
-    }
-  };
-
-  const resetPassword = async () => {
-    if (!/^\d{6}$/.test(otp.trim())) {
-      setError('Enter the 6-digit OTP from your SMS.');
-      return;
-    }
-    if (password.length < 8) {
-      setError('New password must be at least 8 characters.');
-      return;
-    }
-    if (password !== confirm) {
-      setError('Passwords do not match.');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    try {
-      const result = await resetPasswordWithOtp(resolvedIdentifier, otp.trim(), password);
-      if (!result.ok) {
-        setError(result.error ?? 'Could not reset the password.');
-        return;
-      }
-
-      Alert.alert('Password updated', result.message ?? 'You can now sign in with your new password.', [
-        { text: 'Sign In', onPress: () => router.replace('/(auth)/login') },
-      ]);
     } catch (err) {
       setError(friendlyDbError(err));
     } finally {
@@ -159,34 +73,31 @@ export default function ForgotPasswordScreen() {
     <SafeAreaView style={[styles.safe, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <TouchableOpacity
-            onPress={() => (step === 'reset' ? setStep('identify') : router.back())}
-            style={styles.backBtn}
-          >
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <Text style={[styles.backText, { color: theme.textSecondary }]}>← Back</Text>
           </TouchableOpacity>
 
           <View style={styles.header}>
-            <Text style={styles.emoji}>🔑</Text>
-            <Text style={[styles.title, { color: theme.text }]}>
-              {step === 'identify' ? 'Forgot password?' : 'Enter OTP'}
-            </Text>
+            <Text style={styles.emoji}>📧</Text>
+            <Text style={[styles.title, { color: theme.text }]}>Forgot password?</Text>
             <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-              {step === 'identify'
-                ? 'Works for students, employees, wardens and the Super Admin. We will send a 6-digit OTP to the mobile number on your account.'
-                : `Enter the OTP sent to ${maskedPhone || 'your mobile number'} and choose a new password.`}
+              {sent
+                ? 'Check your inbox for a secure recovery link.'
+                : 'Enter the email address on your account. We will email you a secure one-time link to choose a new password.'}
             </Text>
           </View>
 
-          {step === 'identify' ? (
+          {!sent ? (
             <View style={styles.form}>
               <Input
-                label="Email or Mobile Number"
-                placeholder="your@email.com or 9876543210"
+                label="Email Address"
+                placeholder="your@email.com"
                 autoCapitalize="none"
+                autoCorrect={false}
                 keyboardType="email-address"
-                value={identifier}
-                onChangeText={setIdentifier}
+                value={email}
+                onChangeText={setEmail}
+                onSubmitEditing={sendLink}
                 required
               />
 
@@ -197,37 +108,11 @@ export default function ForgotPasswordScreen() {
               ) : null}
 
               <Button
-                title="Send OTP"
-                onPress={sendOtp}
+                title="Send Recovery Link"
+                onPress={sendLink}
                 isLoading={loading}
                 style={{ marginTop: Spacing.base }}
               />
-
-              {/* Email fallback — works without any SMS provider */}
-              <View
-                style={[
-                  styles.altBox,
-                  { backgroundColor: theme.surfaceAlt, borderColor: theme.border },
-                ]}
-              >
-                <Text style={[styles.altTitle, { color: theme.text }]}>
-                  {emailSent ? '✅ Reset link sent' : 'No mobile number? Use email'}
-                </Text>
-                <Text style={[styles.altText, { color: theme.textSecondary }]}>
-                  {emailSent
-                    ? 'Open the link we emailed you on this device. It opens the app and lets you set a new password.'
-                    : 'We can email you a reset link instead. It opens the app where you choose a new password.'}
-                </Text>
-                {!emailSent ? (
-                  <Button
-                    title="Send reset link by email"
-                    onPress={sendEmailLink}
-                    isLoading={emailSending}
-                    variant="outline"
-                    style={{ marginTop: Spacing.sm }}
-                  />
-                ) : null}
-              </View>
 
               <TouchableOpacity
                 onPress={() => router.replace('/(auth)/login')}
@@ -243,49 +128,14 @@ export default function ForgotPasswordScreen() {
             </View>
           ) : (
             <View style={styles.form}>
-              {info ? (
-                <View style={[styles.infoBox, { backgroundColor: Colors.primary + '15', borderColor: Colors.primary + '40' }]}>
-                  <Text style={[styles.infoText, { color: theme.text }]}>{info}</Text>
-                </View>
-              ) : null}
-
-              {devOtp ? (
-                <View style={[styles.demoBox, { backgroundColor: Colors.warning + '18', borderColor: Colors.warning + '55' }]}>
-                  <Text style={[styles.demoTitle, { color: theme.text }]}>
-                    ⚠️ Demo mode — SMS provider not configured
-                  </Text>
-                  <Text style={[styles.demoOtp, { color: theme.text }]}>{devOtp}</Text>
-                  <Text style={[styles.demoHint, { color: theme.textSecondary }]}>
-                    Use this OTP to continue. Ask the Super Admin to connect an SMS provider to receive it on the phone.
-                  </Text>
-                </View>
-              ) : null}
-
-              <Input
-                label="6-digit OTP"
-                placeholder="123456"
-                keyboardType="number-pad"
-                maxLength={6}
-                value={otp}
-                onChangeText={(t) => setOtp(t.replace(/\D/g, ''))}
-                required
-              />
-              <Input
-                label="New Password"
-                placeholder="Minimum 8 characters"
-                isPassword
-                value={password}
-                onChangeText={setPassword}
-                required
-              />
-              <Input
-                label="Confirm New Password"
-                placeholder="Re-enter new password"
-                isPassword
-                value={confirm}
-                onChangeText={setConfirm}
-                required
-              />
+              <View style={[styles.successBox, { backgroundColor: Colors.success + '15', borderColor: Colors.success + '40' }]}>
+                <Text style={[styles.successIcon]}>✅</Text>
+                <Text style={[styles.successTitle, { color: theme.text }]}>Recovery email sent</Text>
+                <Text style={[styles.successText, { color: theme.textSecondary }]}>
+                  We sent a one-time recovery link to {sentTo}. Open it on this device — the app will open automatically and
+                  take you to the new-password screen.
+                </Text>
+              </View>
 
               {error ? (
                 <View style={[styles.errorBox, { backgroundColor: Colors.error + '15', borderColor: Colors.error + '40' }]}>
@@ -293,20 +143,25 @@ export default function ForgotPasswordScreen() {
                 </View>
               ) : null}
 
-              <Button
-                title="Reset Password"
-                onPress={resetPassword}
-                isLoading={loading}
-                style={{ marginTop: Spacing.base }}
-              />
-
               <TouchableOpacity
-                onPress={sendOtp}
+                onPress={sendLink}
                 disabled={cooldown > 0 || loading}
-                style={styles.resendBtn}
+                style={[styles.resendBtn, { opacity: cooldown > 0 || loading ? 0.5 : 1 }]}
               >
                 <Text style={[styles.resendText, { color: cooldown > 0 ? theme.textMuted : Colors.primary }]}>
-                  {cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Resend OTP'}
+                  {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend email'}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => router.replace('/(auth)/login')}
+                style={[styles.linkBtn, { borderColor: theme.border, backgroundColor: theme.surfaceAlt }]}
+              >
+                <Text style={[styles.linkText, { color: theme.textSecondary }]}>
+                  Back to{' '}
+                  <Text style={{ color: theme.primary, fontFamily: Typography.fontFamily.semiBold }}>
+                    Sign in
+                  </Text>
                 </Text>
               </TouchableOpacity>
             </View>
@@ -314,8 +169,9 @@ export default function ForgotPasswordScreen() {
 
           <View style={[styles.noteBox, { backgroundColor: theme.surfaceAlt, borderColor: theme.border }]}>
             <Text style={[styles.noteText, { color: theme.textSecondary }]}>
-              🔒 OTPs expire after 10 minutes and can be used once. The OTP is sent to the mobile number saved on your
-              profile. If no number is saved, ask the Super Admin to add it in your profile first.
+              🔒 The recovery link expires shortly and can be used once. Password reset is email-only — no SMS, phone
+              number or OTP is required. If you do not see the email, check your spam folder or ask the Super Admin to
+              verify the address on your profile.
             </Text>
           </View>
         </ScrollView>
@@ -348,48 +204,31 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    marginBottom: Spacing.sm,
+    marginTop: Spacing.sm,
   },
   errorText: {
     fontFamily: Typography.fontFamily.medium,
     fontSize: Typography.size.sm,
     lineHeight: 20,
   },
-  infoBox: {
-    padding: Spacing.md,
+  successBox: {
+    padding: Spacing.lg,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    marginBottom: Spacing.base,
-  },
-  infoText: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.sm,
-    lineHeight: 20,
-  },
-  demoBox: {
-    padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    marginBottom: Spacing.base,
     alignItems: 'center',
   },
-  demoTitle: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.sm,
+  successIcon: { fontSize: 34, marginBottom: Spacing.sm },
+  successTitle: {
+    fontFamily: Typography.fontFamily.bold,
+    fontSize: Typography.size.md,
     marginBottom: Spacing.xs,
     textAlign: 'center',
   },
-  demoOtp: {
-    fontFamily: Typography.fontFamily.bold,
-    fontSize: 34,
-    letterSpacing: 8,
-    marginVertical: Spacing.xs,
-  },
-  demoHint: {
+  successText: {
     fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
+    fontSize: Typography.size.sm,
+    lineHeight: 21,
     textAlign: 'center',
-    lineHeight: 17,
   },
   linkBtn: {
     marginTop: Spacing.md,
@@ -402,7 +241,7 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontFamily.regular,
     fontSize: Typography.size.base,
   },
-  resendBtn: { alignItems: 'center', paddingVertical: Spacing.md },
+  resendBtn: { alignItems: 'center', paddingVertical: Spacing.lg },
   resendText: {
     fontFamily: Typography.fontFamily.semiBold,
     fontSize: Typography.size.sm,
@@ -411,22 +250,6 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-  },
-  altBox: {
-    marginTop: Spacing.md,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-  },
-  altTitle: {
-    fontFamily: Typography.fontFamily.semiBold,
-    fontSize: Typography.size.sm,
-    marginBottom: Spacing.xs,
-  },
-  altText: {
-    fontFamily: Typography.fontFamily.regular,
-    fontSize: Typography.size.xs,
-    lineHeight: 17,
   },
   noteText: {
     fontFamily: Typography.fontFamily.regular,

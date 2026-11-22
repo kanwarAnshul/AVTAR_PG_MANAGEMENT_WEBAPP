@@ -13,11 +13,11 @@
 | Rejections | Mandatory reason enforced in the approval flow. |
 | Checkout | Archive-first, then irreversible deletion of documents/records/login; audit notification to owner. |
 | Input handling | Zod form validation, server-side RPC validation, friendly errors (no raw SQL leaks to UI). |
-| SMS OTP | Hardened RPC with rate limiting in dev mode; health card + test SMS for the owner. |
+| Password recovery | Email-only, single-use Supabase recovery link; no SMS provider, phone OTP or demo mode. Redirect `avtarpg://reset-password` allowlisted. |
 
 ## Verification performed
 
-- Post-migration backend suite: **10/10** (schema, RPCs, RLS, policies, realtime, terms gate, SMS mode).
+- Post-migration backend suite: **10/10** (schema, RPCs, RLS, policies, realtime, terms gate, email-only recovery config).
 - Live multi-user test: **11/11** — three roles logged in, read dashboards and wrote records concurrently; tenant RLS isolation confirmed against the real owner's property; anonymous access blocked; test rows deleted.
 - Android UI smoke: owner, warden and tenant portals rendered; tenant Terms gate, sign-in navigation and session persistence verified on emulator.
 
@@ -25,11 +25,10 @@
 
 1. **Debug-signed APK.** Direct install works and upgrades in place, but Google Play needs a release keystore and an AAB. Use EAS with a managed Android keystore.
 2. **iOS unverified on device.** Windows has no Xcode. A cloud simulator build proves compilation; production IPA and TestFlight need an Apple Developer account (99 USD/year) and an iPhone or TestFlight testers.
-3. **SMS gateway in demo mode.** `sms_dev_mode = true` by default. Configure Fast2SMS (or equivalent) and complete Indian DLT registration before promising real OTP delivery. See [SMS_PROVIDER_SETUP.md](SMS_PROVIDER_SETUP.md).
-4. **Email reset link needs SMTP.** Configure SMTP in Supabase Auth and add the `avtarpg://reset-password` redirect URL.
-5. **No in-app "delete my account" screen.** Required by Google Play's account-deletion policy; checkout deletion exists but is owner-approved, not self-service.
-6. **Legal review.** The Privacy Policy and Terms in this repo are product templates, not legal advice. Confirm Haryana tenancy law, notice periods, refund/deposit rules, grievance officer and jurisdiction clauses with counsel. Display the owner's registered business name and address.
-7. **Backup and incident plan.** Enable Supabase point-in-time recovery on a paid plan; document who can rotate the service key and revoke tokens.
+3. **Recovery email deliverability.** Password reset relies on Supabase's built-in mailer; the `avtarpg://reset-password` redirect must stay allowlisted. Custom sender/templates require a paid plan with SMTP. See [PASSWORD_RECOVERY.md](PASSWORD_RECOVERY.md).
+4. **No in-app "delete my account" screen.** Required by Google Play's account-deletion policy; checkout deletion exists but is owner-approved, not self-service.
+5. **Legal review.** The Privacy Policy and Terms in this repo are product templates, not legal advice. Confirm Haryana tenancy law, notice periods, refund/deposit rules, grievance officer and jurisdiction clauses with counsel. Display the owner's registered business name and address.
+6. **Backup and incident plan.** Enable Supabase point-in-time recovery on a paid plan; document who can rotate the service key and revoke tokens.
 
 ## Handling the temporary verification credentials
 

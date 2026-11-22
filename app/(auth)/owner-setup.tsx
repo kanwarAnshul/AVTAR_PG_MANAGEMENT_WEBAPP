@@ -116,10 +116,8 @@ export default function OwnerSetupScreen() {
       setError('Passwords do not match.');
       return;
     }
-    if (!/^[6-9]\d{9}$/.test(phone.trim())) {
-      setError('Enter a valid 10-digit mobile number. It is used for OTP password recovery.');
-      return;
-    }
+    // Password recovery is email-only — a phone number is optional contact
+    // information and is never required to reset a password.
 
     setSubmitting(true);
     try {
@@ -237,14 +235,13 @@ export default function OwnerSetupScreen() {
             required
           />
           <Input
-            label="Owner Mobile Number"
-            placeholder="10-digit mobile (for OTP recovery)"
+            label="Owner Mobile Number (optional)"
+            placeholder="Contact number for records"
             keyboardType="phone-pad"
             maxLength={10}
             value={phone}
             onChangeText={setPhone}
-            hint="Used only for password-reset OTP."
-            required
+            hint="Optional. Password recovery uses your email address only."
           />
           <Input
             label="Password"

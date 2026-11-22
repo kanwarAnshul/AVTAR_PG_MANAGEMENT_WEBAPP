@@ -62,8 +62,9 @@ flowchart LR
     D -- Yes --> E[sendDueReminders on app foreground]
     E --> F[Tenant notification]
     F --> G[Tenant pays offline / UPI / cash]
-    G --> H[Warden marks receipt collected]
-    H --> I[Owner cash-flow report]
+    G --> H[Warden / tenant records payment]
+    H --> I[PDF receipt generated from live DB rows]
+    I --> J[Owner cash-flow report]
 ```
 
 Tenants may change their due day **only before the 15th** of the month; after that the office must do it.
@@ -101,7 +102,7 @@ flowchart TD
     B --> I[Tenants & wardens read under Profile]
 ```
 
-`terms_gate_enabled` is seeded **ON**. The Privacy Policy uses a built-in template until the owner publishes custom text; Terms are published by the owner and versioned by their update timestamp.
+`terms_gate_enabled` is seeded **ON**. The Privacy Policy uses a built-in template until the owner publishes custom text; Terms are published by the owner and versioned by their update timestamp. On first login the owner is prompted to author **Property House Rules**, which are saved as pinned notices (`type = 'rules'`) and shown to every tenant of every property.
 
 ## 6. Data isolation
 
@@ -122,3 +123,26 @@ flowchart TB
     C -. owner sees owned properties .-> E
     C -. signed 60s URLs .-> F
 ```
+
+## 7. Password recovery (email only)
+
+```mermaid
+sequenceDiagram
+    participant U as User (any role)
+    participant A as App (Forgot password)
+    participant S as Supabase Auth
+    participant M as Email inbox
+    U->>A: Tap Forgot password / Reset via email
+    A->>U: Ask for the email on the account
+    U->>A: Enter email
+    A->>S: resetPasswordForEmail(email, avtarpg://reset-password)
+    S->>M: Send one-time recovery link
+    U->>M: Open link on the device
+    M->>A: Deep link opens the new-password screen
+    U->>A: Set new password
+    A->>S: Password updated; user routed to their portal
+```
+
+There is **no SMS/OTP branch**. Phone numbers are optional contact details only. Recovery relies
+on the single-use email link, so the profile email must be correct. See
+[PASSWORD_RECOVERY.md](PASSWORD_RECOVERY.md).

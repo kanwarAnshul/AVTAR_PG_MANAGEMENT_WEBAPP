@@ -173,7 +173,7 @@ export default function LoginScreen() {
               style={styles.forgotLink}
             >
               <Text style={[styles.forgotText, { color: theme.primary }]}>
-                Forgot password? Get an OTP
+                Forgot password? Reset via email
               </Text>
             </TouchableOpacity>
 

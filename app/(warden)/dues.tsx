@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../../src/lib/supabase';
+import { generateAndShareReceipt } from '../../src/services/receipt';
 import { Colors, Typography, Spacing, BorderRadius, PAYMENT_MODES } from '../../src/constants/theme';
 import { useThemeStore } from '../../src/stores/themeStore';
 import { useAuthStore } from '../../src/stores/authStore';
@@ -25,7 +26,7 @@ import { ScreenHeader, EmptyState, LoadingView } from '../../src/components/ui';
 export default function WardenDuesScreen() {
   const { isDark } = useThemeStore();
   const theme = isDark ? Colors.dark : Colors.light;
-  const { user } = useAuthStore();
+  const { user, profile } = useAuthStore();
   const queryClient = useQueryClient();
 
   const [collectModalVisible, setCollectModalVisible] = useState(false);
@@ -41,6 +42,7 @@ export default function WardenDuesScreen() {
         .from('invoices')
         .select(`
           *,
+          property:properties(name),
           tenant:tenants(
             id, full_name, phone, category,
             tenancy:tenancies!inner(room:rooms(room_no), bed:beds(label))
@@ -56,7 +58,7 @@ export default function WardenDuesScreen() {
 
   const confirmPaymentMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedInvoice) return;
+      if (!selectedInvoice) throw new Error('No invoice selected');
       setActionLoading(true);
 
       const amountPaise = selectedInvoice.balance_due;
@@ -90,15 +92,48 @@ export default function WardenDuesScreen() {
         });
 
       if (aError) throw aError;
+
+      const receiptInvoice = {
+        ...selectedInvoice,
+        paid_amount: (selectedInvoice.paid_amount || 0) + amountPaise,
+        balance_due: Math.max(0, (selectedInvoice.balance_due || 0) - amountPaise),
+      };
+      return {
+        payment,
+        invoice: receiptInvoice,
+        tenant: selectedInvoice.tenant,
+        propertyName: selectedInvoice.property?.name,
+      };
     },
-    onSuccess: () => {
+    onSuccess: async ({ payment, invoice, tenant, propertyName }) => {
       setActionLoading(false);
       setCollectModalVisible(false);
       setSelectedInvoice(null);
       setReferenceNo('');
       queryClient.invalidateQueries({ queryKey: ['warden-dues-list'] });
       queryClient.invalidateQueries({ queryKey: ['warden-dashboard-stats'] });
-      Alert.alert('Payment Recorded', 'Invoice marked paid and receipt issued.');
+      Alert.alert(
+        'Payment Recorded',
+        'Invoice marked paid. Your PDF receipt will open next — hand it to the tenant or save it for the office.',
+        [
+          {
+            text: 'OK',
+            onPress: async () => {
+              try {
+                await generateAndShareReceipt({
+                  payment,
+                  invoice,
+                  tenant,
+                  propertyName,
+                  collectedBy: profile?.full_name || 'Warden',
+                });
+              } catch {
+                Alert.alert('Receipt', 'The PDF could not open right now. The payment has been recorded successfully.');
+              }
+            },
+          },
+        ]
+      );
     },
     onError: (err: any) => {
       setActionLoading(false);

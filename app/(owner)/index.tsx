@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -27,6 +28,7 @@ export default function OwnerHomeScreen() {
   const theme = isDark ? Colors.dark : Colors.light;
   const { profile, user } = useAuthStore();
   const { unreadCount } = useNotificationStore();
+  const [rulesPromptDismissed, setRulesPromptDismissed] = useState(false);
 
   const { data: stats, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['owner-overall-stats', user?.id],
@@ -59,6 +61,12 @@ export default function OwnerHomeScreen() {
       const { data: deposits } = await supabase.from('deposit_transactions').select('amount');
       const totalDeposits = (deposits || []).reduce((sum, d) => sum + (d.amount || 0), 0);
 
+      // 7. Has the owner authored the property house rules yet?
+      const { count: rulesCount } = await supabase
+        .from('notices')
+        .select('*', { count: 'exact', head: true })
+        .eq('type', 'rules');
+
       return {
         totalCollections,
         totalExpenses,
@@ -68,6 +76,7 @@ export default function OwnerHomeScreen() {
         pendingApprovals: pendingCount || 0,
         totalTenants: tenantCount || 0,
         totalDeposits,
+        rulesCount: rulesCount || 0,
       };
     },
   });
@@ -101,6 +110,7 @@ export default function OwnerHomeScreen() {
     pendingApprovals = 0,
     totalTenants = 0,
     totalDeposits = 0,
+    rulesCount = 0,
   } = stats || {};
 
   const hasLiveData = totalCollections > 0 || totalTenants > 0 || totalBeds > 0 || pendingApprovals > 0;
@@ -136,6 +146,37 @@ export default function OwnerHomeScreen() {
             <Text style={[styles.emptySub, { color: theme.textSecondary }]}>
               Add rooms, tenants and payments — this dashboard will update automatically from your database.
             </Text>
+          </View>
+        )}
+
+        {/* First-login setup: owner-authored property rules for every tenant */}
+        {rulesCount === 0 && !rulesPromptDismissed && (
+          <View style={[styles.rulesPrompt, { backgroundColor: Colors.primary + '15', borderColor: Colors.primary + '50' }]}>
+            <Text style={{ fontSize: 26 }}>📋</Text>
+            <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+              <Text style={[styles.rulesPromptTitle, { color: theme.text }]}>Set up your Property House Rules</Text>
+              <Text style={[styles.rulesPromptSub, { color: theme.textSecondary }]}>
+                Write the rules once — they are pinned and shown to every tenant in every property. You can update them
+                any time from Settings.
+              </Text>
+              <View style={styles.rulesPromptBtns}>
+                <TouchableOpacity
+                  onPress={() => router.push('/(owner)/notices?type=rules' as any)}
+                  style={styles.rulesPromptBtn}
+                >
+                  <Text style={styles.rulesPromptBtnText}>Write Rules Now</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    setRulesPromptDismissed(true);
+                    Alert.alert('Reminder later', 'You can add property rules any time from Settings → Property House Rules.');
+                  }}
+                  style={styles.rulesPromptLater}
+                >
+                  <Text style={[styles.rulesPromptLaterText, { color: theme.textSecondary }]}>Later</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         )}
 
@@ -311,6 +352,14 @@ const styles = StyleSheet.create({
   emptyHint: { padding: Spacing.base, borderRadius: 12, borderWidth: 1, alignItems: 'center', marginBottom: Spacing.base },
   emptyTitle: { fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.base, marginTop: Spacing.sm },
   emptySub: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.sm, marginTop: 4, textAlign: 'center', lineHeight: 20 },
+  rulesPrompt: { flexDirection: 'row', padding: Spacing.md, borderRadius: 12, borderWidth: 1, marginBottom: Spacing.base },
+  rulesPromptTitle: { fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.sm },
+  rulesPromptSub: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs, marginTop: 3, lineHeight: 17 },
+  rulesPromptBtns: { flexDirection: 'row', alignItems: 'center', marginTop: Spacing.sm, gap: Spacing.md },
+  rulesPromptBtn: { backgroundColor: Colors.primary, paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, borderRadius: 8 },
+  rulesPromptBtnText: { color: '#FFFFFF', fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.xs },
+  rulesPromptLater: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.sm },
+  rulesPromptLaterText: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.xs },
   actionHeading: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.xs, letterSpacing: 1, marginBottom: Spacing.sm },
   shortcutRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md, borderBottomWidth: 1 },
   shortcutTitle: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.sm },

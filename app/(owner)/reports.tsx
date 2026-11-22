@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { supabase } from '../../src/lib/supabase';
+import { generateAndShareReceipt } from '../../src/services/receipt';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/constants/theme';
 import { useThemeStore } from '../../src/stores/themeStore';
 import { useAuthStore } from '../../src/stores/authStore';
@@ -44,7 +45,7 @@ export default function OwnerReportsScreen() {
       // 1. Payments
       const { data: payments } = await supabase
         .from('payments')
-        .select('*, tenant:tenants(full_name)')
+        .select('*, tenant:tenants(full_name), property:properties(name)')
         .order('payment_date', { ascending: false });
 
       // 2. Expenses
@@ -214,6 +215,26 @@ export default function OwnerReportsScreen() {
     }
   };
 
+  // Re-generate the exact PDF receipt for any recorded payment (owner audit).
+  const downloadReceipt = async (payment: any) => {
+    try {
+      const { data: allocation } = await supabase
+        .from('payment_allocations')
+        .select('invoice:invoices(*)')
+        .eq('payment_id', payment.id)
+        .maybeSingle();
+      await generateAndShareReceipt({
+        payment,
+        invoice: (allocation as any)?.invoice || {},
+        tenant: { full_name: payment.tenant?.full_name },
+        propertyName: payment.property?.name,
+        collectedBy: payment.received_by ? 'Recorded by staff' : 'Tenant',
+      });
+    } catch {
+      Alert.alert('Receipt Error', 'Could not generate the PDF receipt. Please try again.');
+    }
+  };
+
   if (isLoading) return <LoadingView message="Loading financial accounts..." />;
 
   const { payments = [], expenses = [], totalInflow = 0, totalExpense = 0, netProfit = 0 } = data || {};
@@ -324,6 +345,12 @@ export default function OwnerReportsScreen() {
                 +{formatCurrency(p.amount)}
               </Text>
             </View>
+            <TouchableOpacity
+              onPress={() => downloadReceipt(p)}
+              style={[styles.receiptBtn, { borderColor: theme.border }]}
+            >
+              <Text style={[styles.receiptBtnText, { color: theme.primary }]}>📄 PDF Receipt</Text>
+            </TouchableOpacity>
           </Card>
         ))}
       </ScrollView>
@@ -398,6 +425,8 @@ const styles = StyleSheet.create({
   itemTitle: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.xs },
   itemSub: { fontFamily: Typography.fontFamily.regular, fontSize: 10, marginTop: 2 },
   itemAmt: { fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.xs },
+  receiptBtn: { marginTop: Spacing.sm, paddingVertical: Spacing.sm, borderRadius: 8, borderWidth: 1, alignItems: 'center' },
+  receiptBtnText: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.xs },
   modalOverlay: { flex: 1, justifyContent: 'flex-end' },
   modalContent: { borderTopLeftRadius: BorderRadius['2xl'], borderTopRightRadius: BorderRadius['2xl'], padding: Spacing.xl },
   modalTitle: { fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.xl, marginBottom: Spacing.base },

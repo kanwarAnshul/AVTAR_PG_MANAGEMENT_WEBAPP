@@ -11,9 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
 import { supabase } from '../../src/lib/supabase';
+import { generateAndShareReceipt } from '../../src/services/receipt';
 import { Colors, Typography, Spacing, BorderRadius, PAYMENT_MODES } from '../../src/constants/theme';
 import { useThemeStore } from '../../src/stores/themeStore';
 import { useAuthStore } from '../../src/stores/authStore';
@@ -44,7 +43,7 @@ export default function TenantRentScreen() {
       if (!user) return null;
       const { data: tenant } = await supabase
         .from('tenants')
-        .select('id, property_id, full_name, current_tenancy:tenancies!inner(id, due_day, check_in_date, room:rooms(room_no), bed:beds(label))')
+        .select('id, property_id, full_name, property:properties(name), current_tenancy:tenancies!inner(id, due_day, check_in_date, room:rooms(room_no), bed:beds(label))')
         .eq('user_id', user.id)
         .eq('tenancies.status', 'active')
         .maybeSingle();
@@ -142,15 +141,42 @@ export default function TenantRentScreen() {
         });
 
       if (aError) throw aError;
-      return { receiptNo, amountPaise };
+
+      // Receipt reflects the invoice AFTER this payment was allocated.
+      const receiptInvoice = {
+        ...selectedInvoice,
+        paid_amount: (selectedInvoice.paid_amount || 0) + amountPaise,
+        balance_due: Math.max(0, (selectedInvoice.balance_due || 0) - amountPaise),
+      };
+      return { receiptNo, amountPaise, payment, invoice: receiptInvoice };
     },
-    onSuccess: ({ receiptNo }) => {
+    onSuccess: async ({ receiptNo, payment, invoice }) => {
       setIsSubmitting(false);
       setPaymentModalVisible(false);
       setReferenceNo('');
       queryClient.invalidateQueries({ queryKey: ['tenant-rent-data'] });
       queryClient.invalidateQueries({ queryKey: ['tenant-dashboard'] });
-      Alert.alert('Payment Recorded', `Payment recorded successfully! Receipt #${receiptNo}`);
+      Alert.alert(
+        'Payment Recorded',
+        `Payment recorded successfully!\nReceipt #${receiptNo}\n\nYour PDF receipt will open next — save or share it for your records.`,
+        [
+          {
+            text: 'OK',
+            onPress: async () => {
+              try {
+                await generateAndShareReceipt({
+                  payment,
+                  invoice,
+                  tenant: data?.tenant,
+                  propertyName: (data?.tenant as any)?.property?.name,
+                });
+              } catch {
+                Alert.alert('Receipt', 'The PDF could not open right now. You can download it any time from Payment History.');
+              }
+            },
+          },
+        ]
+      );
     },
     onError: (err: any) => {
       setIsSubmitting(false);
@@ -158,72 +184,24 @@ export default function TenantRentScreen() {
     },
   });
 
-  const generatePDFReceipt = async (invoice: any) => {
+  const generatePDFReceipt = async (invoice: any, payment?: any) => {
     try {
-      const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            body { font-family: -apple-system, sans-serif; padding: 30px; color: #171A12; }
-            .header { text-align: center; border-bottom: 2px solid #4F5E28; padding-bottom: 15px; margin-bottom: 20px; }
-            .title { font-size: 24px; font-weight: bold; color: #4F5E28; }
-            .row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; }
-            .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            .table th, .table td { border: 1px solid #DCE1CC; padding: 10px; text-align: left; }
-            .table th { background: #EFF1E6; }
-            .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
-            .paid { background: #DCFCE7; color: #166534; }
-            .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #5C6450; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="title">AVTAR SINGH PG</div>
-            <div>Rent Invoice & Payment Receipt</div>
-          </div>
-          <div class="row">
-            <div><strong>Invoice No:</strong> ${invoice.invoice_no}</div>
-            <div><strong>Date:</strong> ${formatDate(invoice.issue_date)}</div>
-          </div>
-          <div class="row">
-            <div><strong>Tenant:</strong> ${data?.tenant?.full_name}</div>
-            <div><strong>Period:</strong> ${getBillingPeriodLabel(invoice.billing_period)}</div>
-          </div>
-          <div class="row">
-            <div><strong>Status:</strong> <span class="badge paid">${invoice.status.toUpperCase()}</span></div>
-            <div><strong>Due Date:</strong> ${formatDate(invoice.due_date)}</div>
-          </div>
-          <table class="table">
-            <thead>
-              <tr><th>Description</th><th>Amount</th></tr>
-            </thead>
-            <tbody>
-              ${(invoice.invoice_lines || [])
-                .map((l: any) => `<tr><td>${l.description}</td><td>${formatCurrency(l.amount)}</td></tr>`)
-                .join('')}
-              <tr><td><strong>Total Amount</strong></td><td><strong>${formatCurrency(invoice.total_amount)}</strong></td></tr>
-              <tr><td><strong>Paid Amount</strong></td><td><strong>${formatCurrency(invoice.paid_amount)}</strong></td></tr>
-              <tr><td><strong>Balance Due</strong></td><td><strong>${formatCurrency(invoice.balance_due)}</strong></td></tr>
-            </tbody>
-          </table>
-          <div class="footer">
-            <p>Generated automatically by AVTAR SINGH PG Manager System.</p>
-            <p>Thank you for your prompt payment!</p>
-          </div>
-        </body>
-        </html>
-      `;
-
-      const { uri } = await Print.printToFileAsync({ html });
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri);
-      } else {
-        Alert.alert('Receipt Ready', `Saved to ${uri}`);
-      }
-    } catch (err: any) {
-      Alert.alert('Error', 'Failed to generate PDF receipt');
+      await generateAndShareReceipt({
+        payment: payment ?? { payment_date: new Date().toISOString(), amount: invoice.paid_amount, mode: 'recorded' },
+        invoice,
+        tenant: data?.tenant,
+        propertyName: (data?.tenant as any)?.property?.name,
+      });
+    } catch {
+      Alert.alert('Receipt Error', 'Could not generate the PDF receipt. Please try again.');
     }
+  };
+
+  // Re-open the exact receipt for a past payment from Payment History.
+  const downloadPaymentReceipt = async (payment: any) => {
+    const period = String(payment.notes || '').replace('Rent for ', '').trim();
+    const invoice = invoices.find((i: any) => i.billing_period === period) || invoices[0] || {};
+    await generatePDFReceipt(invoice, payment);
   };
 
   if (isLoading) return <LoadingView message="Loading rent details..." />;
@@ -365,6 +343,12 @@ export default function TenantRentScreen() {
                     +{formatCurrency(p.amount)}
                   </Text>
                 </View>
+                <TouchableOpacity
+                  onPress={() => downloadPaymentReceipt(p)}
+                  style={[styles.receiptBtn, { borderColor: theme.border }]}
+                >
+                  <Text style={[styles.receiptBtnText, { color: theme.primary }]}>📄 Download PDF Receipt</Text>
+                </TouchableOpacity>
               </Card>
             ))}
           </>
@@ -464,6 +448,8 @@ const styles = StyleSheet.create({
   paymentTitle: { fontFamily: Typography.fontFamily.medium, fontSize: Typography.size.sm },
   paymentDate: { fontFamily: Typography.fontFamily.regular, fontSize: Typography.size.xs, marginTop: 2 },
   paymentAmount: { fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.base },
+  receiptBtn: { marginTop: Spacing.sm, paddingVertical: Spacing.sm, borderRadius: 8, borderWidth: 1, alignItems: 'center' },
+  receiptBtnText: { fontFamily: Typography.fontFamily.semiBold, fontSize: Typography.size.xs },
   modalOverlay: { flex: 1, justifyContent: 'flex-end' },
   modalContent: { borderTopLeftRadius: BorderRadius['2xl'], borderTopRightRadius: BorderRadius['2xl'], padding: Spacing.xl },
   modalTitle: { fontFamily: Typography.fontFamily.bold, fontSize: Typography.size.xl },

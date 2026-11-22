@@ -12,8 +12,8 @@ Professional handover documentation for the multi-role PG management app (Expo /
 | [TERMS_AND_CONDITIONS.md](TERMS_AND_CONDITIONS.md) | Tenant terms and the mandatory login acceptance gate |
 | [SECURITY_AND_LEGAL.md](SECURITY_AND_LEGAL.md) | Security controls, data handling and legal caveats before public launch |
 | [BUILD_AND_DEPLOYMENT.md](BUILD_AND_DEPLOYMENT.md) | Android/iOS build status, install steps and verification record |
-| [SMS_PROVIDER_SETUP.md](SMS_PROVIDER_SETUP.md) | Turning SMS OTP from demo mode into a real gateway |
-| [MASTER_PROMPT_APP_WORKFLOW.md](MASTER_PROMPT_APP_WORKFLOW.md) | Original workflow blueprint |
+| [PASSWORD_RECOVERY.md](PASSWORD_RECOVERY.md) | Email-only password recovery (authoritative; replaces the retired SMS/OTP setup) |
+| [MASTER_PROMPT_APP_WORKFLOW.md](MASTER_PROMPT_APP_WORKFLOW.md) | Original workflow blueprint (historical; SMS/OTP notes superseded) |
 
 ## One-minute orientation
 
@@ -21,6 +21,8 @@ Professional handover documentation for the multi-role PG management app (Expo /
 - **Live data only.** No demo/sample records ship in the app. Every list is a Supabase query protected by Row Level Security.
 - **Three portals:** Owner (`/(owner)`), Warden (`/(warden)`), Tenant (`/(tenant)`).
 - **Terms gate:** tenants must accept the owner's Terms before entering; acceptance is re-requested whenever the owner edits the text.
+- **Email-only recovery:** forgot-password sends a one-time Supabase recovery link; no SMS provider or OTP is used. See [PASSWORD_RECOVERY.md](PASSWORD_RECOVERY.md).
+- **PDF receipts:** after a rent payment is recorded, a live-data PDF receipt opens for the tenant, warden or owner to save.
 
 ## Support contacts
 

@@ -2,6 +2,8 @@
 
 **What this is:** a copy-paste prompt that makes any capable AI (Claude, ChatGPT, Gemini) produce a complete, client-ready workflow document for **AVTAR SINGH PG**. The prompt already contains your real screens, roles, data model and business rules, so the output describes *your* app instead of inventing a generic one.
 
+> **Implementation note (Nov 2026) — read before using this blueprint.** The original design below included SMS/OTP password reset and SMS invites. That decision has been **superseded**: password recovery is now **email-only** (a secure one-time Supabase recovery link), SMS/OTP helpers and the SMS provider card have been removed from the app, and warden invites are sent by email or in-app push only. Where this prompt still mentions SMS, OTP, demo mode, `password_reset_otps` or `sms_provider_config`, treat those as **historical** and use [PASSWORD_RECOVERY.md](PASSWORD_RECOVERY.md) and the current [USER_GUIDE.md](USER_GUIDE.md) as authoritative. The lines below have been annotated where practical.
+
 **How to use it**
 1. Open a new chat with a long-context model.
 2. Paste everything between the `=== BEGIN MASTER PROMPT ===` and `=== END MASTER PROMPT ===` markers.
@@ -67,7 +69,7 @@ Expo SDK 58 / React Native 0.88, Expo Router file-based navigation, TypeScript, 
 There is a single email + password sign-in for all roles. The role is read from the user's profile after sign-in — nobody chooses a portal at login. The app routes the user to the correct portal automatically.
 
 ### Portals and tabs (exact)
-**Entry / auth (no login yet):** Welcome → Login → (Forgot password · OTP) · (Super Admin setup, first run only) · Register → choose Student or Employee → registration form → Pending screen.
+**Entry / auth (no login yet):** Welcome → Login → (Forgot password · email recovery link) · (Super Admin setup, first run only) · Register → choose Student or Employee → registration form → Pending screen.
 
 **Owner portal — 8 tabs + 2 screens:**
 1. Overview (dashboard)
@@ -102,7 +104,7 @@ There is a single email + password sign-in for all roles. The role is read from 
 7. Profile
 
 ### Data model (Part D)
-`profiles`, `properties`, `property_memberships`, `rooms`, `beds`, `tenant_registrations`, `tenants`, `tenancies`, `bed_allocations`, `invoices`, `payments`, `complaints`, `notices`, `notifications`, `expenses`, `audit_events`, `push_tokens`, `tenant_requests`, `daily_presence`, `emergency_alerts`, `app_settings`, `warden_invites`, `password_reset_otps`, `sms_provider_config`, `app_secrets`.
+`profiles`, `properties`, `property_memberships`, `rooms`, `beds`, `tenant_registrations`, `tenants`, `tenancies`, `bed_allocations`, `invoices`, `payments`, `complaints`, `notices`, `notifications`, `expenses`, `audit_events`, `push_tokens`, `tenant_requests`, `daily_presence`, `emergency_alerts`, `app_settings`, `warden_invites`, `former_tenants`, `app_secrets`. (The historical `password_reset_otps` and `sms_provider_config` tables are no longer used by the app; recovery is handled by Supabase Auth email.)
 
 Money is stored in **paise** (integers) and displayed in ₹. Documents live in two private storage buckets: `tenant_docs` (registration/profile) and `complaint_photos`. They are shown through short-lived signed links, never public URLs. PAN is encrypted at rest.
 
@@ -135,9 +137,9 @@ Money is stored in **paise** (integers) and displayed in ₹. Documents live in 
 11. **Emergency alerts go to the room.** A tenant raises an emergency with a reason and optional description. Active alerts are visible to roommates, the warden and the owner until resolved.
 12. **Complaints carry photos.** A tenant can attach one photo; the warden and owner update status; the tenant is notified on every status change.
 13. **Requests are separate from complaints.** A request is a permission ask (e.g. room change, late entry, leave); a complaint is a defect report. Both need a decision, and a rejection needs a reason.
-14. **Wardens are invited, not self-registered.** The owner creates the warden account from the Wardens tab and assigns properties. The warden is notified by push, falling back to SMS or email. Wardens only ever see their assigned properties.
+14. **Wardens are invited, not self-registered.** The owner creates the warden account from the Wardens tab and assigns properties. The warden is notified by push, falling back to email. Wardens only ever see their assigned properties.
 15. **Notices** can be posted by the owner and the warden at any time, pinned, and targeted by type. Tenants read them in the Notices tab.
-16. **Password reset by SMS OTP works for every role** — student, employee, warden, owner. The user enters email or mobile, receives a 6-digit OTP valid for 10 minutes, and sets a new password. If no SMS provider is configured, the app runs in a clearly-labelled **demo mode** that displays the OTP on screen.
+16. **Password recovery is email-only for every role** — tenant, warden, owner. The user enters the email on their account and Supabase sends a secure one-time recovery link that opens the app (`avtarpg://reset-password`) and leads to the new-password screen. No SMS provider, mobile number, OTP or demo mode is involved.
 17. **Theme.** Light/dark/system theme is selectable and remembered per user. Welcome screen and all dashboards adapt.
 18. **Offline.** When connectivity drops, an animated banner appears; data actions fail with a friendly message rather than a crash.
 19. **Money.** Rent, deposit, payments and dues are always displayed in ₹ with Indian digit grouping. Payments record mode (cash/UPI/bank/cheque) and are reflected in the invoice balance immediately.
@@ -183,7 +185,7 @@ For each of Owner, Warden, Tenant — a numbered first-day-to-steady-state journ
 
 ### Part 4 — Screen-by-screen reference
 One subsection per screen, in portal order, using the mandatory 7-field structure. Cover **all 28 screens**:
-- Auth: Welcome, Login, Forgot password (OTP), Super Admin setup, Register category, Student form, Employee form, Pending
+- Auth: Welcome, Login, Forgot password (email recovery link), Reset password, Super Admin setup, Register category, Student form, Employee form, Pending
 - Owner: Overview, Wardens, Approvals, Reports, Rooms, Notices, Activity, Settings, Profile, Privacy
 - Warden: Home, Approvals, Beds, Dues, Complaints, Requests, Presence, Notices, Profile
 - Tenant: Home, Rent, Complaints, Requests, Presence, Notices, Profile
@@ -196,7 +198,7 @@ Required diagrams:
 4. `stateDiagram-v2` — complaint lifecycle
 5. `stateDiagram-v2` — request lifecycle
 6. `flowchart` — daily presence and emergency alert flow
-7. `sequenceDiagram` — password reset via SMS OTP
+7. `sequenceDiagram` — password recovery via email one-time link
 8. `sequenceDiagram` — register → approve → allocate → pay → complaint → resolve
 Each diagram must be preceded by 2–3 sentences of plain-language explanation and followed by a "how to read this" note.
 
@@ -204,13 +206,13 @@ Each diagram must be preceded by 2–3 sentences of plain-language explanation a
 Reproduce and expand the 13 handoffs above with: trigger, who is notified, what the other role sees, and the SLA you would recommend (e.g. approve within 24 hours).
 
 ### Part 7 — Notifications and communication matrix
-Table: event → recipient → channel (in-app / push / SMS / email) → message intent → what the user should do. Include the OTP flow and the warden invite fallback chain.
+Table: event → recipient → channel (in-app / push / email) → message intent → what the user should do. Include the email recovery flow and the warden invite fallback chain (push → email).
 
 ### Part 8 — Business rules catalogue
 All 20 rules, each with: rule, why it exists, what the user sees if they hit it, and who can override it.
 
 ### Part 9 — Edge cases and recovery ("What can go wrong")
-At minimum cover: email confirmation left on during signup; document upload failing; no mobile number on the account so OTP cannot be sent; SMS provider not configured (demo mode); tenant forgets to mark presence; warden not assigned to a property; bed already occupied; rejection with no reason; due-day change after the 15th; offline during a payment entry; duplicate registration; owner account already claimed. For each: symptom → cause → fix → prevention.
+At minimum cover: email confirmation left on during signup; document upload failing; wrong or missing email on the account so the recovery link cannot arrive; recovery email in spam or expired link; tenant forgets to mark presence; warden not assigned to a property; bed already occupied; rejection with no reason; due-day change after the 15th; offline during a payment entry; duplicate registration; owner account already claimed. For each: symptom → cause → fix → prevention.
 
 ### Part 10 — Printable quick-start cards
 Three one-page cards, each in a bordered box, written for printing:
@@ -223,7 +225,7 @@ Each step ≤ 12 words. Include a "call this person if stuck" placeholder.
 20 questions, grouped by role, answered in ≤ 3 sentences each.
 
 ### Part 12 — Glossary
-Every domain and app term in plain language: PG, warden, tenancy, allocation, due day, invoice, partial payment, presence, request, complaint, notice, resubmission, OTP, demo mode.
+Every domain and app term in plain language: PG, warden, tenancy, allocation, due day, invoice, partial payment, presence, request, complaint, notice, resubmission, recovery link.
 
 ### Part 13 — Developer appendix (Part D audience only)
 - Route → screen map

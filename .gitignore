@@ -47,3 +47,5 @@ yarn-error.*
 /dist
 .build-log*.txt
 .shots/
+.vercel
+.env*

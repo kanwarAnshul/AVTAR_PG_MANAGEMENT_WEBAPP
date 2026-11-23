@@ -1,0 +1,27 @@
+# Generated native projects (Continuous Native Generation)
+android/
+ios/
+
+# Local build output and artifacts
+dist/
+web-build/
+.expo/
+.shots/
+*.apk
+*.aab
+.build-log*.txt
+
+# Dependencies and VCS
+node_modules/
+.git/
+
+# Signing material and local secrets
+*.jks
+*.keystore
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.env
+.env*.local
+.vercel/

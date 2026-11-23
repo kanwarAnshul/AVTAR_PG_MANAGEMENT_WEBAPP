@@ -6,6 +6,24 @@ Architecture: **Expo Router SDK 58 → static web export (`dist/`) → Vercel**.
 
 ---
 
+## ✅ Live deployment (23 November 2026)
+
+| Field | Value |
+| --- | --- |
+| GitHub repo | `https://github.com/kanwarAnshul/AVTAR_PG_MANAGEMENT_WEBAPP.git` (`main`) |
+| Vercel project | `avtar-pg-manager` (scope `kanwaranshuls-projects`) |
+| **Production URL** | **https://avtar-pg-manager.vercel.app** |
+| Deployment ID | `dpl_BWULCoV6tRaj3KBtNsAuKbUtvMiu` |
+| Auto-deploy | Git repository connected — every push to `main` deploys automatically |
+| Supabase `site_url` | `https://avtar-pg-manager.vercel.app` |
+| Supabase redirect allowlist | `avtarpg://reset-password`, `exp://**`, `http://localhost:3000/reset-password`, `https://avtar-pg-manager.vercel.app/reset-password`, `https://avtar-pg-manager.vercel.app/**` |
+
+Verified live: `/`, `/login` and `/forgot-password` all return HTTP 200 and render correctly; the manifest is served as `application/manifest+json`, `/sw.js` activates, and no console errors appear.
+
+> **Important:** `.vercelignore` is required. Without it, Vercel tries to upload the generated `android/` folder (~2.5 GB) and the local APK (~105 MB) and fails with `File size limit exceeded (100 MB)`.
+
+---
+
 ## 1. What works in the PWA
 
 | Feature | PWA behavior |

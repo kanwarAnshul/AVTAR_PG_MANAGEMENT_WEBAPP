@@ -1,0 +1,28 @@
+{
+  "name": "AVTAR SINGH PG Manager",
+  "short_name": "AVTAR PG",
+  "description": "Owner, warden and tenant portal for AVTAR SINGH PG — rent, dues, notices and receipts.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#10130D",
+  "theme_color": "#10130D",
+  "lang": "en-IN",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

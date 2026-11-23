@@ -8,11 +8,11 @@ import {
   RefreshControl,
   Modal,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
+import { exportTextFile } from '../../src/lib/fileExport';
 import { supabase } from '../../src/lib/supabase';
 import { generateAndShareReceipt } from '../../src/services/receipt';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/constants/theme';
@@ -195,18 +195,13 @@ export default function OwnerReportsScreen() {
         csvContent += `"${type}","${date}","${ref}","${party}",${amt}\n`;
       });
 
-      const fileUri = `${FileSystem.documentDirectory}avtar_pg_financial_report_${currentPeriod}.csv`;
-      await FileSystem.writeAsStringAsync(fileUri, csvContent, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: 'text/csv',
-          dialogTitle: 'Export AVTAR PG Financial Report',
-        });
-      } else {
-        Alert.alert('Report Saved', `File saved to ${fileUri}`);
+      await exportTextFile(
+        `avtar_pg_financial_report_${currentPeriod}.csv`,
+        csvContent,
+        'text/csv'
+      );
+      if (Platform.OS === 'web') {
+        Alert.alert('Report Downloaded', 'The CSV file has been saved to your downloads.');
       }
     } catch (err: any) {
       Alert.alert('Export Failed', err.message || 'Could not export CSV');

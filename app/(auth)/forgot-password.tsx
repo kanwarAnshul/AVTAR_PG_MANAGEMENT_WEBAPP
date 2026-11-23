@@ -54,7 +54,13 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
     setError('');
     try {
-      const result = await sendPasswordResetEmail(clean, Linking.createURL('/reset-password'));
+      // Native apps open the avtarpg:// deep link; the PWA uses an HTTPS URL
+      // so Safari/Chrome can hand the recovery link back to the installed app.
+      const redirectTo =
+        Platform.OS === 'web' && typeof window !== 'undefined'
+          ? `${window.location.origin}/reset-password`
+          : Linking.createURL('/reset-password');
+      const result = await sendPasswordResetEmail(clean, redirectTo);
       if (!result.ok) {
         setError(result.error ?? 'Could not send the recovery email. Please try again.');
         return;

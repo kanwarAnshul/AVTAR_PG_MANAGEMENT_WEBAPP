@@ -5,18 +5,22 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { supabase } from '../lib/supabase';
 
-// Configure notification behavior
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// expo-notifications is native-only (Android/iOS). The PWA relies on the
+// in-app notices list, so none of these calls run on web.
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+    }),
+  });
+}
 
 export async function registerForPushNotificationsAsync(userId: string): Promise<string | undefined> {
+  if (Platform.OS === 'web') return undefined;
   let token: string | undefined;
 
   if (Platform.OS === 'android') {
@@ -69,7 +73,7 @@ export function usePushNotifications(userId?: string) {
   const responseListener = useRef<any>(null);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || Platform.OS === 'web') return;
 
     registerForPushNotificationsAsync(userId);
 

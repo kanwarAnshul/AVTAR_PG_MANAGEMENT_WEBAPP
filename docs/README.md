@@ -12,6 +12,7 @@ Professional handover documentation for the multi-role PG management app (Expo /
 | [TERMS_AND_CONDITIONS.md](TERMS_AND_CONDITIONS.md) | Tenant terms and the mandatory login acceptance gate |
 | [SECURITY_AND_LEGAL.md](SECURITY_AND_LEGAL.md) | Security controls, data handling and legal caveats before public launch |
 | [BUILD_AND_DEPLOYMENT.md](BUILD_AND_DEPLOYMENT.md) | Android/iOS build status, install steps and verification record |
+| [PWA_AND_VERCEL_DEPLOYMENT.md](PWA_AND_VERCEL_DEPLOYMENT.md) | Installable web app: Vercel build, env vars, redirects, offline shell and phone install |
 | [PASSWORD_RECOVERY.md](PASSWORD_RECOVERY.md) | Email-only password recovery (authoritative; replaces the retired SMS/OTP setup) |
 | [MASTER_PROMPT_APP_WORKFLOW.md](MASTER_PROMPT_APP_WORKFLOW.md) | Original workflow blueprint (historical; SMS/OTP notes superseded) |
 
@@ -22,7 +23,8 @@ Professional handover documentation for the multi-role PG management app (Expo /
 - **Three portals:** Owner (`/(owner)`), Warden (`/(warden)`), Tenant (`/(tenant)`).
 - **Terms gate:** tenants must accept the owner's Terms before entering; acceptance is re-requested whenever the owner edits the text.
 - **Email-only recovery:** forgot-password sends a one-time Supabase recovery link; no SMS provider or OTP is used. See [PASSWORD_RECOVERY.md](PASSWORD_RECOVERY.md).
-- **PDF receipts:** after a rent payment is recorded, a live-data PDF receipt opens for the tenant, warden or owner to save.
+- **PDF receipts:** after a rent payment is recorded, a live-data PDF receipt opens for the tenant, warden or owner to save (browser print → *Save as PDF* on the PWA).
+- **Also a PWA:** the same codebase exports to Vercel; iOS/Android users add it to the Home Screen and get updates without app store review. See [PWA_AND_VERCEL_DEPLOYMENT.md](PWA_AND_VERCEL_DEPLOYMENT.md).
 
 ## Support contacts
 

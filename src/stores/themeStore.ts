@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Appearance } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import { securePrefs } from '../lib/securePrefs';
 import type { ThemePreference } from '../types';
 
 type ColorScheme = 'dark' | 'light';
@@ -57,15 +57,15 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     // RootLayout re-saves on user change via loadSavedTheme. We persist
     // to the base key for signed-out (welcome) screens and let the
     // per-user key take over once a user is known.
-    SecureStore.setItemAsync(baseKey, pref).catch(() => {});
+    securePrefs.set(baseKey, pref).catch(() => {});
   },
 
   loadSavedTheme: async (userId?: string) => {
     try {
       const key = storedKey(userId);
-      let saved: string | null = await SecureStore.getItemAsync(key);
+      let saved: string | null = await securePrefs.get(key);
       if (!saved && userId) {
-        saved = await SecureStore.getItemAsync(baseKey);
+        saved = await securePrefs.get(baseKey);
       }
       const pref = (saved === 'light' || saved === 'dark' || saved === 'system'
         ? saved
@@ -73,7 +73,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
       const scheme = resolveScheme(pref);
       set({ preference: pref, colorScheme: scheme, isDark: scheme === 'dark' });
       if (userId) {
-        SecureStore.setItemAsync(key, pref).catch(() => {});
+        securePrefs.set(key, pref).catch(() => {});
       }
     } catch {
       const scheme = resolveScheme(get().preference);

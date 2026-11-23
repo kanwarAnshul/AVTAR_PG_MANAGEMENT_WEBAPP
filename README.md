@@ -1,6 +1,6 @@
 # 🏠 AVTAR SINGH PG — Mobile Management Application
 
-> Enterprise-grade, cross-platform mobile application for **AVTAR SINGH PG** built with **React Native (Expo SDK 51/58)**, **Supabase PostgreSQL**, **Zustand**, and **TanStack Query**. Supports **Android** & **iOS** from a single performant codebase.
+> Enterprise-grade, cross-platform application for **AVTAR SINGH PG** built with **React Native (Expo SDK 58)**, **Supabase PostgreSQL**, **Zustand**, and **TanStack Query**. One codebase ships as an **Android/iOS app** and as an installable **PWA on the web** — open a link, *Add to Home Screen*, and update without app store review.
 
 ---
 
@@ -30,6 +30,12 @@
 - **Warden Management**: Create warden accounts, grant permissions, and bind them to PG properties.
 - **Final Sign-off Authority**: Super admin override on approvals and access to decrypt PAN records.
 - **Sanitized Financial CSV Export**: Protected against CSV formula injection (`=`, `+`, `-`, `@` stripped).
+
+### 🌐 Installable Web App (PWA)
+- **One link for iOS & Android**: open the deployed HTTPS URL and choose *Add to Home Screen*; runs full-screen in standalone mode.
+- **Instant updates**: redeploying Vercel publishes the new version — no Play Store or App Store approval.
+- **Offline app shell**: a service worker caches static assets only; never Supabase data, session tokens or personal files.
+- **Email-only password recovery** and **browser print → Save as PDF** receipts on the web.
 
 ---
 
@@ -107,8 +113,8 @@ avtar-pg-manager/
    - The script is re-runnable: tables/columns/indexes use `IF NOT EXISTS`, and policies are created only if missing.
    - If you already ran the older 003+004 script, run **only** `supabase/migrations/005_warden_promotion.sql` through `010_checkout_and_policies.sql` (in order).
 6. **Storage is created automatically by migration 006** — private `tenant_docs` and `complaint_photos` buckets plus their RLS policies. No manual bucket step is needed. This is what fixes the `new row violates row level security policy` error on student/employee document upload.
-7. **Migration 007 enables `pg_net`** (outbound HTTPS from Postgres) and adds the SMS health check (`sms_status()`) and the one-tap test message (`sms_send_test()`).
-8. **Migration 008 fixes "No account was found" on Forgot password.** Accounts created before 006 never had their mobile number copied into `profiles` — the original trigger had no phone column, so the number typed at signup was kept only in `auth.users` metadata. 008 backfills it and teaches the lookup to search the signup metadata and `tenant_registrations` as well.
+7. **Migration 007 enables `pg_net`** and adds historical SMS helper functions. They remain in the database for compatibility but are **not used by the app** — recovery is email-only.
+8. **Migration 008 backfills phone numbers into `profiles`** from signup metadata (used by the old SMS lookup). It is safe to keep; the app does not use phone numbers for recovery.
 9. **Migration 009 enables live updates and PAN decryption.** It adds the missing `decrypt_pan()` (owner-only) so Approvals can show a real PAN instead of an encrypted blob, and it puts `notices`, `notifications`, `profiles`, `tenant_requests`, `emergency_alerts`, `complaints` and `daily_presence` into the `supabase_realtime` publication — without it `postgres_changes` subscriptions join successfully but never deliver an event, so the notification badge and notice board only refresh on pull-to-refresh.
 10. **Migration 010 adds tenant checkout, the former-tenants archive and the policy/terms sections.**
     - **Checkout:** Profile → *Initiate Checkout* opens a required form (date + time + feedback). It creates a `checkout_requests` row and notifies the owner, who approves or rejects (rejection needs a reason) from **Owner → Approvals → Checkout Requests**.
@@ -140,29 +146,16 @@ SELECT schemaname, tablename FROM pg_publication_tables
 WHERE pubname = 'supabase_realtime' ORDER BY tablename;
 ```
 
-### 1c. Forgot password (SMS OTP) — all roles
-Every role (student, employee, warden, Super Admin) can reset the password from **Sign In → Forgot password? Get an OTP**.
+### 1c. Forgot password (email only) — all roles
+Every role (student, employee, warden, Super Admin) resets the password from **Sign In → Forgot password? Reset via email**.
 
-- The OTP is a random 6-digit code generated in the database, valid for 10 minutes, with a 5-attempt limit and rate limiting.
-- It is sent to `profiles.phone`. Registration and Super Admin setup now save the phone number automatically. Existing users can add/update it in **Profile**.
-- **Demo mode is ON by default** (no SMS provider yet): the OTP is shown on the reset screen so the flow works immediately.
-- To send real SMS, open **Owner → Settings → SMS OTP**, pick `fast2sms` (recommended for India), paste the API key + sender ID, turn **Demo mode** off, and Save. Or run:
-  ```sql
-  SELECT public.set_sms_provider('fast2sms', 'YOUR_FAST2SMS_API_KEY', 'AVTPG');
-  SELECT public.set_sms_dev_mode(false);
-  ```
-- SMS delivery uses the `pg_net` extension (migration 007 enables it). Fast2SMS OTP/transactional messages require DLT registration for Indian numbers.
-- Supported providers: `fast2sms`, `msg91` (needs an OTP template ID), and `webhook` (posts `{to, message, otp, sender, api_key}` JSON to your own endpoint).
-- **Migration 007 makes the transport verifiable.** `send_sms_otp()` now waits for the provider's real HTTP reply instead of assuming success, `sms_status()` shows the gateway health, and `sms_send_test(phone)` sends a test message and returns the provider's raw response. Use **Owner → Settings → SMS OTP → Send Test SMS** to confirm the key works.
-- **Email fallback (no SMS vendor needed):** the same screen offers *"Send reset link by email"*, which uses Supabase's built-in mailer. Configure SMTP in **Project Settings → Email** and add `avtarpg://reset-password` to **Authentication → URL Configuration → Redirect URLs**.
-- Full step-by-step, provider comparison and troubleshooting: **`docs/SMS_PROVIDER_SETUP.md`**.
-- **"No account was found for that mobile number"?** Run migration `008_identifier_lookup_fix.sql`. Accounts created before 006 never had their phone copied into `profiles` (the original signup trigger had no phone column). 008 backfills it from the signup metadata and searches it too. To see where your number is stored:
-  ```sql
-  SELECT p.email, p.phone AS profiles_phone,
-         a.raw_user_meta_data->>'phone' AS signup_meta_phone
-    FROM public.profiles p JOIN auth.users a ON a.id = p.id
-   WHERE lower(p.email) = 'YOUR_EMAIL_HERE';
-  ```
+- Enter the email address on the account; Supabase sends a secure, single-use recovery link.
+- **No SMS, phone number, OTP or demo mode** is used anywhere in the app — no vendor, API key or DLT registration is needed.
+- Allowlist the redirect URL in **Supabase → Authentication → URL Configuration → Redirect URLs**:
+  - Native app: `avtarpg://reset-password`
+  - PWA: `https://<your-domain>/reset-password`
+- Email confirmation for sign-up must be OFF; the built-in mailer's recovery template already contains `{{ .ConfirmationURL }}` (the free tier cannot edit email templates, and does not need to).
+- Full flow, setup and troubleshooting: **`docs/PASSWORD_RECOVERY.md`**; PWA deployment: **`docs/PWA_AND_VERCEL_DEPLOYMENT.md`**.
 
 ### 1b. Create the first Super Admin (owner)
 There is no public owner registration (that would let anyone become owner). The app uses one shared sign-in and detects the role from the database.
@@ -272,4 +265,26 @@ eas login
 eas build:configure
 eas build --platform ios
 ```
+
+---
+
+## 🌐 Web app / PWA (Vercel)
+
+The same app exports as a static PWA. Users open one HTTPS link, tap **Add to Home Screen** (Safari on iOS, Chrome on Android), and use it full-screen. Updates ship by redeploying — no store approval.
+
+```bash
+# Local static build — output in dist/
+npx expo export --platform web --output-dir dist
+```
+
+Vercel reads the committed `vercel.json` (`buildCommand: npx expo export --platform web`, `outputDirectory: dist`, clean URLs). Set these **Production environment variables in Vercel before building** (they are inlined at build time):
+
+```text
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-publishable-key
+```
+
+Then add `https://<your-domain>/reset-password` to the Supabase Auth redirect allowlist (keep `avtarpg://reset-password` for the native app). The service worker caches only static assets, never personal data.
+
+**Full guide:** [`docs/PWA_AND_VERCEL_DEPLOYMENT.md`](docs/PWA_AND_VERCEL_DEPLOYMENT.md) — install steps, verification checklist and web limitations.
 

@@ -6,7 +6,8 @@
 2. **Theme:** use the sun/moon control to switch light, dark or device-following. Your choice is saved per account.
 3. **Offline banner:** if the internet drops, an animated banner appears; data resumes syncing when you are back online.
 4. **Forgot password:** tap *Forgot password? Reset via email*. Enter the email address on your account. Supabase emails you a one-time recovery link — open it on this device to reach the new-password screen. No SMS, mobile number or OTP is involved. See [PASSWORD_RECOVERY.md](PASSWORD_RECOVERY.md).
-5. **Privacy and Terms** are always available under **Profile**.
+5. **On the web:** open the app link in Chrome (Android) or Safari (iPhone), then choose *Add to Home Screen* / *Install app*. It opens full-screen like a normal app and updates automatically. Receipts use the browser's *Save as PDF*. See [PWA_AND_VERCEL_DEPLOYMENT.md](PWA_AND_VERCEL_DEPLOYMENT.md).
+6. **Privacy and Terms** are always available under **Profile**.
 
 ## For the Owner (Super Admin)
 

@@ -1,5 +1,5 @@
 import 'expo-sqlite/localStorage/install';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 
@@ -27,6 +27,32 @@ const assertConfigured = () => {
   if (!isSupabaseConfigured) throw new Error(SUPABASE_CONFIG_ERROR);
 };
 
+// On native, expo-sqlite/localStorage/install provides window.localStorage.
+// On web it is the browser's own storage. In the Node.js static-render pass
+// neither exists, so fall back to an in-memory shim (never shipped to users).
+const memoryStore = new Map<string, string>();
+const authStorage = (() => {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const probe = '__avtar_storage_probe__';
+      localStorage.setItem(probe, '1');
+      localStorage.removeItem(probe);
+      return localStorage;
+    }
+  } catch {
+    // Storage blocked (private browsing) — use memory for this session.
+  }
+  return {
+    getItem: (key: string) => memoryStore.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      memoryStore.set(key, value);
+    },
+    removeItem: (key: string) => {
+      memoryStore.delete(key);
+    },
+  };
+})();
+
 // Create the client only when configured; otherwise use a minimal shape so
 // the app can still launch and show the config error (no dummy data).
 export const supabase = createClient(
@@ -34,10 +60,12 @@ export const supabase = createClient(
   isSupabaseConfigured ? (configuredAnonKey as string) : 'placeholder',
   {
     auth: {
-      storage: localStorage,
+      storage: authStorage,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: false,
+      // Recovery links land on /reset-password#access_token=... in the PWA.
+      // Supabase must exchange those hash tokens before the screen reads the session.
+      detectSessionInUrl: Platform.OS === 'web',
     },
     realtime: {
       params: {

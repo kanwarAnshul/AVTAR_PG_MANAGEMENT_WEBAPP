@@ -5,7 +5,8 @@
 | Area | Control |
 | --- | --- |
 | Authentication | Supabase GoTrue, email + password; role always read from `profiles.role` on the server. Client-supplied roles are never trusted. |
-| Session storage | SQLite-backed `localStorage` adapter; refresh loop tied to foreground/background. |
+| Session storage | SQLite-backed `localStorage` adapter on native; browser `localStorage` on web; refresh loop tied to foreground/background. |
+| PWA offline cache | Service worker caches static app assets only. Supabase API traffic, session tokens, personal records and uploaded files are never cached. |
 | Authorisation | Row Level Security on all data tables. Tenant sees only own records and own property; warden sees assigned property; owner sees owned property. Anonymous reads return zero rows. |
 | Private documents | `tenant_docs` bucket is private; access through 60-second signed URLs. No public object URLs. |
 | Sensitive identifiers | PAN encrypted at rest (AES-256) via `decrypt_pan`; only owner can decrypt. |
@@ -13,22 +14,24 @@
 | Rejections | Mandatory reason enforced in the approval flow. |
 | Checkout | Archive-first, then irreversible deletion of documents/records/login; audit notification to owner. |
 | Input handling | Zod form validation, server-side RPC validation, friendly errors (no raw SQL leaks to UI). |
-| Password recovery | Email-only, single-use Supabase recovery link; no SMS provider, phone OTP or demo mode. Redirect `avtarpg://reset-password` allowlisted. |
+| Password recovery | Email-only, single-use Supabase recovery link; no SMS provider, phone OTP or demo mode. Redirects allowlisted: `avtarpg://reset-password` (native) and `https://<domain>/reset-password` (PWA). |
 
 ## Verification performed
 
 - Post-migration backend suite: **10/10** (schema, RPCs, RLS, policies, realtime, terms gate, email-only recovery config).
 - Live multi-user test: **11/11** — three roles logged in, read dashboards and wrote records concurrently; tenant RLS isolation confirmed against the real owner's property; anonymous access blocked; test rows deleted.
 - Android UI smoke: owner, warden and tenant portals rendered; tenant Terms gate, sign-in navigation and session persistence verified on emulator.
+- Web/PWA smoke: static export (68 routes) served locally; welcome/login/forgot-password render without console errors; service worker registers/activates and caches only shell assets; web bundle uses print-to-PDF and browser downloads, with no native print/filesystem calls.
 
 ## Known gaps to close before public / Play Store launch
 
 1. **Debug-signed APK.** Direct install works and upgrades in place, but Google Play needs a release keystore and an AAB. Use EAS with a managed Android keystore.
 2. **iOS unverified on device.** Windows has no Xcode. A cloud simulator build proves compilation; production IPA and TestFlight need an Apple Developer account (99 USD/year) and an iPhone or TestFlight testers.
-3. **Recovery email deliverability.** Password reset relies on Supabase's built-in mailer; the `avtarpg://reset-password` redirect must stay allowlisted. Custom sender/templates require a paid plan with SMTP. See [PASSWORD_RECOVERY.md](PASSWORD_RECOVERY.md).
-4. **No in-app "delete my account" screen.** Required by Google Play's account-deletion policy; checkout deletion exists but is owner-approved, not self-service.
-5. **Legal review.** The Privacy Policy and Terms in this repo are product templates, not legal advice. Confirm Haryana tenancy law, notice periods, refund/deposit rules, grievance officer and jurisdiction clauses with counsel. Display the owner's registered business name and address.
-6. **Backup and incident plan.** Enable Supabase point-in-time recovery on a paid plan; document who can rotate the service key and revoke tokens.
+3. **Recovery email deliverability.** Password reset relies on Supabase's built-in mailer; `avtarpg://reset-password` (native) and `https://<domain>/reset-password` (PWA) must stay allowlisted. Custom sender/templates require a paid plan with SMTP. See [PASSWORD_RECOVERY.md](PASSWORD_RECOVERY.md).
+4. **Vercel deployment pending.** The PWA build is verified locally; the production project, environment variables, custom domain and Supabase web redirect still need the owner's Vercel login. See [PWA_AND_VERCEL_DEPLOYMENT.md](PWA_AND_VERCEL_DEPLOYMENT.md).
+5. **No in-app "delete my account" screen.** Required by Google Play's account-deletion policy; checkout deletion exists but is owner-approved, not self-service.
+6. **Legal review.** The Privacy Policy and Terms in this repo are product templates, not legal advice. Confirm Haryana tenancy law, notice periods, refund/deposit rules, grievance officer and jurisdiction clauses with counsel. Display the owner's registered business name and address.
+7. **Backup and incident plan.** Enable Supabase point-in-time recovery on a paid plan; document who can rotate the service key and revoke tokens.
 
 ## Handling the temporary verification credentials
 

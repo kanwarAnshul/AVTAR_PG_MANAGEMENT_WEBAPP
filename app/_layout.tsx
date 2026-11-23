@@ -18,6 +18,7 @@ import { useAuthStore } from '../src/stores/authStore';
 import { useThemeStore } from '../src/stores/themeStore';
 import { Colors } from '../src/constants/theme';
 import { OfflineBanner } from '../src/components/OfflineBanner';
+import { useServiceWorker } from '../src/hooks/useServiceWorker';
 import { sendDueReminders } from '../src/services/messaging';
 import { supabase } from '../src/lib/supabase';
 
@@ -38,6 +39,7 @@ export default function RootLayout() {
   const { initialize, user } = useAuthStore();
   const { loadSavedTheme, isDark, initSystemListener } = useThemeStore();
   const theme = isDark ? Colors.dark : Colors.light;
+  useServiceWorker();
 
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,

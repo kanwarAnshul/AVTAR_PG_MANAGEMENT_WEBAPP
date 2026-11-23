@@ -29,6 +29,25 @@
 
 The delivered APK is **not** Play Store ready: the debug certificate cannot be used for Play uploads. Use `eas build --platform android --profile production` with a managed keystore and submit the AAB.
 
+## Web / PWA — static export
+
+| Field | Value |
+| --- | --- |
+| Export command | `npx expo export --platform web --output-dir dist` |
+| Hosting | Vercel (Hobby/free plan), configured by committed `vercel.json` |
+| Build command on Vercel | `npx expo export --platform web` |
+| Output directory | `dist` (git-ignored locally) |
+| Routes produced | 68 static HTML routes |
+| Env vars at build time | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` |
+| Service worker | `public/sw.js` → `dist/sw.js`, cache `avtar-pg-shell-v1` |
+| PWA metadata | `app/+html.tsx`, `public/manifest.webmanifest`, `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png` |
+| Web fallbacks | `src/lib/securePrefs.web.ts`, `src/lib/fileExport.web.ts`, `src/services/receipt.web.ts` |
+| Deployment status | Code and config ready; Vercel project/env vars/domain still to be provisioned by the owner |
+
+**Verified locally:** static export succeeds; welcome/login/forgot-password routes render in a browser with no console errors; service worker activates and caches the offline shell; the web bundle contains the print-to-PDF receipt path and no native `expo-print`/`expo-file-system` calls. `npx tsc --noEmit` passes and `npx expo lint` reports 0 errors.
+
+The full deployment, Supabase redirect allowlist and phone install instructions are in **[PWA_AND_VERCEL_DEPLOYMENT.md](PWA_AND_VERCEL_DEPLOYMENT.md)**.
+
 ## iOS — status
 
 - The source is configured for iOS (bundle id `com.avtarsingh.pgmanager`, info.plist camera/photo permissions, EAS profiles in `eas.json`).
@@ -58,7 +77,7 @@ The delivered APK is **not** Play Store ready: the debug certificate cannot be u
 2. Run `supabase/SUPABASE_SETUP.sql` in the SQL Editor, then migrations `007`–`011` in `supabase/migrations/` in order (`011_privacy_policy.sql` seeds the live privacy policy).
 3. Put the URL and publishable key in `.env` as `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` (and in EAS secrets for cloud builds). Never put a secret/service key in the app.
 4. Use the app's first-run Super Admin setup to create the owner. Email confirmation should be OFF (`mailer_autoconfirm = true`).
-5. Allowlist the recovery redirect `avtarpg://reset-password` in Supabase Auth → URL Configuration and confirm the email provider is enabled. Password recovery is email-only; no SMS provider, DLT registration or SMTP customisation is required on the free tier. See `PASSWORD_RECOVERY.md`.
+5. Allowlist the recovery redirect `avtarpg://reset-password` (native) and `https://<your-vercel-domain>/reset-password` (PWA) in Supabase Auth → URL Configuration, and confirm the email provider is enabled. Password recovery is email-only; no SMS provider, DLT registration or SMTP customisation is required on the free tier. See `PASSWORD_RECOVERY.md` and `PWA_AND_VERCEL_DEPLOYMENT.md`.
 
 ## Troubleshooting
 

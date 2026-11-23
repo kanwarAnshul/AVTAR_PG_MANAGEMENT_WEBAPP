@@ -35,14 +35,20 @@ The recovery link is **single-use and short-lived**. The email template only nee
 `{{ .ConfirmationURL }}` — no numeric token is required, which is why no OTP entry screen
 exists in the app.
 
+**On the PWA** the same flow uses an HTTPS redirect instead of the custom scheme:
+`https://<your-domain>/reset-password`. `supabase.auth` detects the tokens in the URL on web,
+exchanges them for a session, and the reset screen appears inside the installed app or browser.
+See [PWA_AND_VERCEL_DEPLOYMENT.md](PWA_AND_VERCEL_DEPLOYMENT.md) for the domain setup.
+
 ### Where the pieces live
 
 | Piece | Location |
 | --- | --- |
-| "Send Recovery Link" screen | `app/(auth)/forgot-password.tsx` |
+| "Send Recovery Link" screen | `app/(auth)/forgot-password.tsx` (chooses native vs web redirect) |
 | New-password screen | `app/reset-password.tsx` |
 | Supabase call | `sendPasswordResetEmail()` in `src/lib/supabase.ts` |
-| Deep-link scheme | `avtarpg` (`app.json`), redirect `avtarpg://reset-password` |
+| Deep-link scheme (native) | `avtarpg` (`app.json`), redirect `avtarpg://reset-password` |
+| Web redirect (PWA) | `${window.location.origin}/reset-password`, with `detectSessionInUrl: true` on web |
 
 ---
 
@@ -51,8 +57,9 @@ exists in the app.
 1. **Auth providers:** Email enabled (`external_email_enabled = true`), email confirmation for
    sign-up off (`mailer_autoconfirm = true`).
 2. **Redirect URL allowlist:** `Authentication → URL Configuration → Redirect URLs` must include
-   `avtarpg://reset-password` (plus `exp://**` if testing in Expo Go). Without it Supabase
-   rejects the redirect.
+   `avtarpg://reset-password` (plus `exp://**` if testing in Expo Go). For the PWA also add
+   `https://<your-vercel-domain>/reset-password` (and `http://localhost:3000/reset-password`
+   for local testing). Without an allowlisted URL Supabase rejects the redirect.
 3. **Site URL:** set to any valid URL (it does not need to host the app).
 4. **Email delivery:** the built-in Supabase mailer is active. On the free tier with the default
    email provider the platform does **not** allow editing auth email templates — attempting to
@@ -91,6 +98,7 @@ dropped in a future cleanup migration.
 | "Could not send the recovery email" | Wrong Supabase config or rate limit | Check `.env` URL/key, then retry after the cooldown |
 | No email arrives | Wrong address, spam folder, or mailer rate limit | Verify the profile email; check spam; wait and resend |
 | Link opens a browser, not the app | Redirect URL not allowlisted or scheme not registered | Add `avtarpg://reset-password` in Supabase Auth and confirm `app.json` scheme |
+| PWA reset link shows an empty screen | Web redirect not allowlisted | Add `https://<your-domain>/reset-password` to Supabase Auth redirect URLs |
 | Link says invalid/expired | Link already used or too old | Request a fresh link from Forgot password |
 | User cannot receive mail at all | No valid email on the account | Super Admin corrects the profile email in Supabase |
 
